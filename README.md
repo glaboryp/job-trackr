@@ -15,13 +15,6 @@ Esta versión inicial (MVP) se centra en la experiencia core de gestión local:
 - **Persistencia**: Todos los datos se guardan automáticamente en el `localStorage` de tu navegador.
 - **Empty State**: Interfaz optimizada para cuando aún no tienes candidaturas.
 
-### ⚠️ Notas de Alcance (Fuera del MVP)
-Para mantener la simplicidad y el enfoque en la UI, este MVP **NO** incluye:
-- Backend o Base de Datos externa.
-- Autenticación de usuarios.
-- Enrutamiento (Vue Router).
-- Gestión de estado global complejo (Pinia).
-
 ## 🛠️ Stack Técnico
 
 - **Framework**: Vue 3 (Composition API + `<script setup>`)
