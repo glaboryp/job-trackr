@@ -61,21 +61,21 @@ function handleMobileStatusUpdate(id: string, status: string): void {
 </script>
 
 <template>
-  <div class="flex overflow-x-auto gap-6 pb-6 min-h-[600px] snap-x snap-mandatory items-start">
+  <div class="flex overflow-x-auto gap-8 pb-8 min-h-[600px] snap-x snap-mandatory items-start scrollbar-hide">
     <div 
       v-for="status in APPLICATION_STATUSES" 
       :key="status" 
-      class="flex-shrink-0 w-80 bg-slate-50 rounded-xl p-4 snap-center border border-slate-200 kanban-column"
+      class="flex-shrink-0 w-80 bg-white p-5 snap-center border-4 border-zinc-900 shadow-[8px_8px_0px_0px_#18181b] transition-all duration-200 focus-within:-translate-y-1 focus-within:shadow-[12px_12px_0px_0px_#18181b] focus-within:ring-4 focus-within:ring-indigo-500/30 kanban-column"
     >
-      <h3 class="text-sm font-semibold mb-4 flex justify-between items-center text-slate-800 uppercase tracking-wide">
+      <h3 class="text-lg font-black mb-5 flex justify-between items-center text-zinc-900 uppercase tracking-widest border-b-4 border-zinc-900 pb-3">
         {{ status }}
-        <span class="bg-slate-200 text-slate-700 text-xs font-bold py-1 px-2.5 rounded-full">
+        <span class="bg-indigo-600 text-white font-mono text-sm font-bold py-1 px-3 border-2 border-zinc-900 shadow-[2px_2px_0px_0px_#18181b]">
           {{ columns[status].length }}
         </span>
       </h3>
       
       <div
-        class="flex flex-col gap-3 min-h-[150px] kanban-cards"
+        class="flex flex-col gap-5 min-h-[150px] transition-colors duration-200 kanban-cards"
         @dragover.prevent
         @drop="(event) => handleDrop(event, status)"
       >

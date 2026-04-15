@@ -8,6 +8,8 @@ describe('JobCard.vue', () => {
     id: '123',
     companyName: 'Acme Corp',
     jobTitle: 'Frontend Developer',
+    modality: 'Híbrido',
+    workLocation: 'Madrid',
     status: 'Aplicado',
     dateApplied: '2023-10-01',
     url: 'https://example.com/job',
@@ -21,12 +23,23 @@ describe('JobCard.vue', () => {
 
     expect(wrapper.find('.company-name').text()).toBe('Acme Corp')
     expect(wrapper.find('.job-title').text()).toBe('Frontend Developer')
+    expect(wrapper.find('.job-modality').text()).toContain('Híbrido')
+    expect(wrapper.find('.job-location').text()).toContain('Madrid')
     expect(wrapper.find('.date-applied').text()).toBe('2023-10-01')
     expect(wrapper.find('.notes-text').text()).toBe('Looking forward to it.')
     
     const urlAnchor = wrapper.find('.job-url')
     expect(urlAnchor.exists()).toBe(true)
     expect(urlAnchor.attributes('href')).toBe('https://example.com/job')
+  })
+
+  it('handles missing workLocation gracefully', () => {
+    const appWithoutLocation = { ...baseApplication, workLocation: '' }
+    const wrapper = mount(JobCard, {
+      props: { application: appWithoutLocation }
+    })
+
+    expect(wrapper.find('.job-location').text()).toBe('Ubicación no especificada')
   })
 
   it('handles empty notes without layout/runtime break', () => {
