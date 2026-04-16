@@ -61,13 +61,13 @@ function handleMobileStatusUpdate(id: string, status: string): void {
 </script>
 
 <template>
-  <div class="flex overflow-x-auto gap-8 pb-8 min-h-[600px] snap-x snap-mandatory items-start scrollbar-hide">
+  <div class="flex-1 min-h-0 overflow-x-auto md:overflow-y-hidden overflow-y-visible flex gap-8 pb-4 snap-x snap-mandatory items-start kanban-board">
     <div 
       v-for="status in APPLICATION_STATUSES" 
       :key="status" 
-      class="flex-shrink-0 w-80 bg-white p-5 snap-center border-4 border-zinc-900 shadow-[8px_8px_0px_0px_#18181b] transition-all duration-200 focus-within:-translate-y-1 focus-within:shadow-[12px_12px_0px_0px_#18181b] focus-within:ring-4 focus-within:ring-indigo-500/30 kanban-column"
+      class="flex-shrink-0 w-80 xl:w-96 2xl:w-[30rem] bg-white p-5 snap-center border-4 border-zinc-900 shadow-[8px_8px_0px_0px_#18181b] transition-all duration-200 focus-within:-translate-y-1 focus-within:shadow-[12px_12px_0px_0px_#18181b] focus-within:ring-4 focus-within:ring-indigo-500/30 kanban-column md:max-h-full h-auto flex flex-col"
     >
-      <h3 class="text-lg font-black mb-5 flex justify-between items-center text-zinc-900 uppercase tracking-widest border-b-4 border-zinc-900 pb-3">
+      <h3 class="text-lg font-black mb-5 flex-none flex justify-between items-center text-zinc-900 uppercase tracking-widest border-b-4 border-zinc-900 pb-3">
         {{ status }}
         <span class="bg-indigo-600 text-white font-mono text-sm font-bold py-1 px-3 border-2 border-zinc-900 shadow-[2px_2px_0px_0px_#18181b]">
           {{ columns[status].length }}
@@ -75,7 +75,7 @@ function handleMobileStatusUpdate(id: string, status: string): void {
       </h3>
       
       <div
-        class="flex flex-col gap-5 min-h-[150px] transition-colors duration-200 kanban-cards"
+        class="flex-1 min-h-[150px] md:overflow-y-auto overflow-y-visible flex flex-col gap-5 transition-colors duration-200 kanban-cards pr-2 -mr-2"
         @dragover.prevent
         @drop="(event) => handleDrop(event, status)"
       >

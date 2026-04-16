@@ -13,6 +13,7 @@ type ApplicationSavePayload = Omit<Application, 'id'> | Application
 const { applications, createApplication, updateApplication, deleteApplication, moveApplication } = useApplications()
 
 const isFormOpen = ref(false)
+const isFiltersOpen = ref(false)
 const editingApplicationId = ref<string | null>(null)
 const searchQuery = ref('')
 const modalityFilter = ref<'all' | Application['modality']>('all')
@@ -139,9 +140,9 @@ const visibleApplications = computed(() => {
 </script>
 
 <template>
-  <div class="min-h-screen bg-[#faf9f6] text-zinc-900 font-sans selection:bg-indigo-200">
-    <main class="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
-      <header class="mb-10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6 border-b-4 border-zinc-900 pb-6">
+  <div class="md:h-screen min-h-screen flex flex-col bg-[#faf9f6] text-zinc-900 font-sans selection:bg-indigo-200 md:overflow-hidden">
+    <main class="flex-1 flex flex-col min-h-0 mx-auto w-full px-4 py-6 sm:px-6 lg:px-8">
+      <header class="flex-none mb-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6 border-b-4 border-zinc-900 pb-6">
         <div>
           <h1 class="text-4xl sm:text-5xl font-black uppercase tracking-tighter text-zinc-900">
             Job Trackr
@@ -160,12 +161,44 @@ const visibleApplications = computed(() => {
         </button>
       </header>
 
+      <div v-if="hasApplications" class="mb-6 md:hidden">
+        <button
+          class="w-full group relative inline-flex cursor-pointer items-center justify-center bg-white px-6 py-3 font-bold uppercase tracking-widest text-zinc-900 transition-all duration-200 active:translate-y-1 active:translate-x-1 focus:outline-none focus-visible:ring-4 focus-visible:ring-indigo-500 shadow-[6px_6px_0px_0px_#18181b] hover:shadow-[2px_2px_0px_0px_#18181b] active:shadow-none border-2 border-zinc-900"
+          @click="isFiltersOpen = true"
+        >
+          Filtros y Búsqueda
+        </button>
+      </div>
+
+      <div 
+        v-if="isFiltersOpen && hasApplications" 
+        class="fixed inset-0 z-40 bg-zinc-900/50 backdrop-blur-sm md:hidden"
+        @click="isFiltersOpen = false"
+        aria-hidden="true"
+      ></div>
+
       <section
         v-if="hasApplications"
-        class="mb-8 border-4 border-zinc-900 bg-white p-4 shadow-[6px_6px_0px_0px_#18181b]"
+        :class="[
+          isFiltersOpen ? 'fixed inset-x-4 top-24 z-50 p-6 max-h-[80vh] overflow-y-auto' : 'hidden md:block mb-6 p-4',
+          'flex-none border-4 border-zinc-900 bg-white shadow-[6px_6px_0px_0px_#18181b]'
+        ]"
         aria-label="Controles de productividad"
+        @keydown.esc="isFiltersOpen = false"
       >
-        <h2 class="mb-4 text-sm font-black uppercase tracking-[0.2em] text-zinc-900">Buscar, filtrar y ordenar</h2>
+        <div class="flex items-center justify-between mb-4">
+          <h2 class="text-sm font-black uppercase tracking-[0.2em] text-zinc-900">Buscar, filtrar y ordenar</h2>
+          <button 
+            v-if="isFiltersOpen" 
+            class="md:hidden p-1 -mr-2 text-zinc-900 hover:text-indigo-600 transition-colors focus:outline-none focus-visible:ring-4 focus-visible:ring-indigo-500" 
+            @click="isFiltersOpen = false"
+            aria-label="Cerrar filtros"
+          >
+            <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="square" stroke-linejoin="miter" stroke-width="2.5" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
         <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
           <div>
             <label for="search-query" class="mb-2 block text-xs font-bold uppercase tracking-widest text-zinc-900">Buscar</label>
