@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useApplications } from '../composables/useApplications'
 import type { ApplicationStatus } from '../constants/statuses'
+import type { ApplicationModality } from '../constants/modalities'
 
 const STORAGE_KEY = 'useApplications:test'
 
@@ -9,6 +10,8 @@ type ApplicationInput = {
   companyName: string
   jobTitle: string
   status: ApplicationStatus
+  modality: ApplicationModality
+  workLocation: string
   dateApplied: string
   url: string
   notes: string
@@ -19,6 +22,8 @@ function createInput(overrides: Partial<ApplicationInput> = {}): ApplicationInpu
     companyName: 'ACME',
     jobTitle: 'Frontend Developer',
     status: 'Aplicado',
+    modality: 'Presencial',
+    workLocation: 'Madrid',
     dateApplied: '2026-04-13',
     url: 'https://example.com/jobs/1',
     notes: 'Initial contact',
@@ -81,7 +86,7 @@ describe('useApplications', () => {
     expect(reloaded.applications.value).toEqual(composable.applications.value)
   })
 
-  it('falls back safely to empty array when storage json is corrupted', () => {
+    it('falls back safely to empty array when storage json is corrupted', () => {
     localStorage.setItem(STORAGE_KEY, '{this-is-not-valid-json')
 
     const composable = useApplications(STORAGE_KEY)
@@ -93,5 +98,26 @@ describe('useApplications', () => {
     expect(created.id).toBeTypeOf('string')
     expect(composable.applications.value).toHaveLength(1)
     expect(localStorage.getItem(STORAGE_KEY)).toBe(JSON.stringify(composable.applications.value))
+  })
+
+  it('normalizes legacy data without modality or workLocation', () => {
+    const legacyApp = {
+      id: 'legacy-1',
+      companyName: 'Legacy Corp',
+      jobTitle: 'Dev',
+      status: 'Aplicado',
+      dateApplied: '2024-01-01',
+      url: '',
+      notes: ''
+    }
+    
+    localStorage.setItem(STORAGE_KEY, JSON.stringify([legacyApp]))
+    
+    const composable = useApplications(STORAGE_KEY)
+    const apps = composable.applications.value
+    
+    expect(apps).toHaveLength(1)
+    expect(apps[0].modality).toBe('Remoto')
+    expect(apps[0].workLocation).toBe('')
   })
 })

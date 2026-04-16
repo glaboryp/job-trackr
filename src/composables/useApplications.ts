@@ -2,6 +2,7 @@ import { ref, readonly, type Ref } from 'vue'
 
 import type { Application } from '../types/application'
 import type { ApplicationStatus } from '../constants/statuses'
+import { normalizeApplicationModality } from '../constants/modalities'
 
 export const APPLICATIONS_STORAGE_KEY = 'job-trackr:applications'
 
@@ -36,7 +37,13 @@ function loadApplications(storageKey: string): Application[] {
 
   try {
     const parsedApplications = JSON.parse(serializedApplications)
-    return Array.isArray(parsedApplications) ? (parsedApplications as Application[]) : []
+    if (!Array.isArray(parsedApplications)) return []
+
+    return parsedApplications.map((app: any): Application => ({
+      ...app,
+      modality: normalizeApplicationModality(app.modality),
+      workLocation: typeof app.workLocation === 'string' ? app.workLocation : '',
+    }))
   } catch {
     return []
   }

@@ -35,6 +35,8 @@ describe('application domain contract', () => {
       id: '1',
       companyName: 'ACME',
       jobTitle: 'Frontend Developer',
+      modality: 'Remoto',
+      workLocation: '',
       status,
       dateApplied: '2026-04-13',
       url: 'https://example.com/job/1',
@@ -46,9 +48,11 @@ describe('application domain contract', () => {
       'dateApplied',
       'id',
       'jobTitle',
+      'modality',
       'notes',
       'status',
       'url',
+      'workLocation',
     ])
   })
 })

@@ -19,10 +19,13 @@ describe('App', () => {
     const emptyState = wrapper.find('[data-testid="empty-state"]')
     expect(emptyState.exists()).toBe(true)
     expect(emptyState.text()).toContain('Ninguna aplicación')
+    expect(emptyState.text()).toContain('Consejo')
+    expect(emptyState.attributes('role')).toBe('status')
 
     const cta = wrapper.find('[data-testid="empty-state-cta"]')
     expect(cta.exists()).toBe(true)
     expect(cta.text()).toContain('Crear aplicación')
+    expect(cta.attributes('aria-label')).toBe('Crear primera aplicación')
   })
 
   it('opens form from empty state CTA and hides empty state after creation', async () => {
@@ -34,6 +37,7 @@ describe('App', () => {
 
     await wrapper.find('#companyName').setValue('Test Inc')
     await wrapper.find('#jobTitle').setValue('Developer')
+    await wrapper.find('[data-testid="application-modality"]').setValue('Remoto')
     await wrapper.find('form').trigger('submit.prevent')
 
     expect(wrapper.find('[data-testid="empty-state"]').exists()).toBe(false)

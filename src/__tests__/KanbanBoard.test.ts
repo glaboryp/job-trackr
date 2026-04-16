@@ -19,9 +19,9 @@ describe('KanbanBoard', () => {
 
   it('groups applications by status into correct columns', () => {
     const apps: Application[] = [
-      { id: '1', jobTitle: 'Dev', companyName: 'A', status: 'Aplicado', dateApplied: '2025-01-01', url: '', notes: '' },
-      { id: '2', jobTitle: 'QA', companyName: 'B', status: 'Entrevista Inicial', dateApplied: '2025-01-02', url: '', notes: '' },
-      { id: '3', jobTitle: 'PM', companyName: 'C', status: 'Rechazado', dateApplied: '2025-01-03', url: '', notes: '' }
+      { id: '1', jobTitle: 'Dev', companyName: 'A', modality: 'Remoto', workLocation: '', status: 'Aplicado', dateApplied: '2025-01-01', url: '', notes: '' },
+      { id: '2', jobTitle: 'QA', companyName: 'B', modality: 'Híbrido', workLocation: 'Madrid', status: 'Entrevista Inicial', dateApplied: '2025-01-02', url: '', notes: '' },
+      { id: '3', jobTitle: 'PM', companyName: 'C', modality: 'Presencial', workLocation: 'Barcelona', status: 'Rechazado', dateApplied: '2025-01-03', url: '', notes: '' }
     ]
 
     const wrapper = mount(KanbanBoard, {
@@ -64,7 +64,7 @@ describe('KanbanBoard', () => {
 
   it('emits events for card actions (edit, delete, move)', async () => {
     const apps: Application[] = [
-      { id: '1', jobTitle: 'Dev', companyName: 'A', status: 'Aplicado', dateApplied: '2025-01-01', url: '', notes: '' }
+      { id: '1', jobTitle: 'Dev', companyName: 'A', modality: 'Remoto', workLocation: '', status: 'Aplicado', dateApplied: '2025-01-01', url: '', notes: '' }
     ]
 
     const wrapper = mount(KanbanBoard, {
@@ -87,9 +87,9 @@ describe('KanbanBoard', () => {
 
   it('emits move with next index on desktop drop', async () => {
     const apps: Application[] = [
-      { id: '1', jobTitle: 'Dev', companyName: 'A', status: 'Aplicado', dateApplied: '2025-01-01', url: '', notes: '' },
-      { id: '2', jobTitle: 'QA', companyName: 'B', status: 'Entrevista Inicial', dateApplied: '2025-01-02', url: '', notes: '' },
-      { id: '3', jobTitle: 'PM', companyName: 'C', status: 'Entrevista Inicial', dateApplied: '2025-01-03', url: '', notes: '' },
+      { id: '1', jobTitle: 'Dev', companyName: 'A', modality: 'Remoto', workLocation: '', status: 'Aplicado', dateApplied: '2025-01-01', url: '', notes: '' },
+      { id: '2', jobTitle: 'QA', companyName: 'B', modality: 'Híbrido', workLocation: 'Madrid', status: 'Entrevista Inicial', dateApplied: '2025-01-02', url: '', notes: '' },
+      { id: '3', jobTitle: 'PM', companyName: 'C', modality: 'Presencial', workLocation: 'Barcelona', status: 'Entrevista Inicial', dateApplied: '2025-01-03', url: '', notes: '' },
     ]
 
     const wrapper = mount(KanbanBoard, {
