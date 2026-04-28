@@ -1,0 +1,42 @@
+name: Deploy InsForge Function
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - insforge/functions/reconcile-applications/**
+      - .github/workflows/insforge-functions.yml
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+concurrency:
+  group: insforge-reconcile-applications
+  cancel-in-progress: true
+
+jobs:
+  deploy-reconcile-applications:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - name: Login to InsForge
+        env:
+          INSFORGE_EMAIL: ${{ secrets.INSFORGE_EMAIL }}
+          INSFORGE_PASSWORD: ${{ secrets.INSFORGE_PASSWORD }}
+        run: |
+          npx --yes @insforge/cli login --email "$INSFORGE_EMAIL" --password "$INSFORGE_PASSWORD" --json
+
+      - name: Deploy function
+        env:
+          INSFORGE_PROJECT_ID: ${{ secrets.INSFORGE_PROJECT_ID }}
+        run: |
+          npx --yes @insforge/cli functions deploy reconcile-applications --file ./insforge/functions/reconcile-applications/index.ts --project-id "$INSFORGE_PROJECT_ID" --json -y

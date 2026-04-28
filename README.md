@@ -43,12 +43,57 @@ Sigue estos pasos para levantar el proyecto localmente:
    pnpm dev
    ```
 
+## 🔐 Configuración Auth (InsForge)
+
+El proyecto soporta dos modos:
+
+- **Modo anónimo**: usa `localStorage`, no requiere login.
+- **Modo autenticado**: activa email/password + sync remoto con InsForge.
+
+1. Copia el ejemplo de entorno:
+   ```bash
+   cp .env.example .env
+   ```
+
+2. Completa variables públicas del cliente:
+   ```bash
+   VITE_INSFORGE_URL=https://<appkey>.<region>.insforge.app
+   VITE_INSFORGE_ANON_KEY=<public-anon-key>
+   VITE_INSFORGE_AUTH_ENABLED=true
+   ```
+
+3. Si quieres mantener auth apagada temporalmente:
+   ```bash
+   VITE_INSFORGE_AUTH_ENABLED=false
+   ```
+
+Notas importantes:
+
+- No uses `api_key` de `.insforge/project.json` en frontend.
+- No guardes tokens de acceso manualmente en `localStorage`.
+
 ## ⌨️ Comandos Útiles
 
 - `pnpm dev`: Inicia el entorno de desarrollo.
 - `pnpm build`: Genera la versión de producción en la carpeta `dist`.
 - `pnpm test`: Ejecuta la suite de pruebas con Vitest.
 - `pnpm preview`: Previsualiza localmente la build de producción.
+- `pnpm test -- --run`: Ejecuta suite completa en modo CI.
+
+## 🔄 Auth + Sync (Resumen de Flujo)
+
+- El bootstrap detecta sesión y define estado global:
+   - `anonymous`, `authenticated`, `conflict_required`, `reconciling`, `error`.
+- Si hay datos locales y remotos al hacer login:
+   - se muestra una **modal bloqueante** con opciones `merge`, `keep_account`, `keep_local`.
+- En signup con datos locales y sin remoto:
+   - se dispara migración automática local -> cuenta.
+
+## 🧭 Runbook Operacional
+
+Para operación, rollback y checklist post-deploy:
+
+- Ver [docs/auth-sync-runbook.md](docs/auth-sync-runbook.md).
 
 ## 📂 Estructura del Proyecto
 

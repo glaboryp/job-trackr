@@ -6,15 +6,16 @@ import { normalizeApplicationModality } from '../constants/modalities'
 
 export const APPLICATIONS_STORAGE_KEY = 'job-trackr:applications'
 
-type NewApplicationInput = Omit<Application, 'id'>
-type UpdateApplicationInput = Partial<Omit<Application, 'id'>>
+export type NewApplicationInput = Omit<Application, 'id'>
+export type UpdateApplicationInput = Partial<Omit<Application, 'id'>>
 
-type UseApplicationsResult = {
+export type UseApplicationsResult = {
   applications: Readonly<Ref<readonly Application[]>>
   createApplication: (application: NewApplicationInput) => Application
   updateApplication: (id: string, updates: UpdateApplicationInput) => Application | null
   deleteApplication: (id: string) => boolean
   moveApplication: (id: string, nextStatus: ApplicationStatus, nextIndex: number) => Application | null
+  replaceApplications: (nextApplications: Application[]) => void
 }
 
 function generateApplicationId(): string {
@@ -155,11 +156,17 @@ export function useApplications(storageKey = APPLICATIONS_STORAGE_KEY): UseAppli
     return movedApplication
   }
 
+  function replaceApplications(nextApplications: Application[]): void {
+    applications.value = [...nextApplications]
+    persist()
+  }
+
   return {
     applications: readonly(applications),
     createApplication,
     updateApplication,
     deleteApplication,
     moveApplication,
+    replaceApplications,
   }
 }
