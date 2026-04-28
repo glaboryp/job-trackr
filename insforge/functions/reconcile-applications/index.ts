@@ -85,7 +85,7 @@ const allowedOrigins = new Set([
 ])
 
 function getCorsHeaders(origin: string | null): HeadersInit {
-  const allowOrigin = origin && allowedOrigins.has(origin) ? origin : 'null'
+  const allowOrigin = origin && allowedOrigins.has(origin) ? origin : '*'
 
   return {
     'Access-Control-Allow-Origin': allowOrigin,
@@ -107,6 +107,7 @@ function jsonResponse(body: unknown, init: ResponseInit = {}, origin: string | n
     ...init,
     headers,
   ])
+}
 function unauthorized(message = 'Missing or invalid bearer token.', origin: string | null = null): Response {
   return jsonResponse({ error: message }, { status: 401 }, origin)
 }
@@ -141,26 +142,19 @@ function normalizeStrategy(value: unknown): ReconcileStrategy | null {
 
 async function resolveAuthenticatedUser(baseUrl: string, authorization: string): Promise<{ id: string; email?: string | null }> {
   const sessionUrl = `${baseUrl.replace(/\/$/, '')}/api/auth/sessions/current`
-
   const response = await fetch(sessionUrl, {
     method: 'GET',
     headers: {
       Authorization: authorization,
       Accept: 'application/json',
     },
-    'https://job-trackr-wine.vercel.app',
-  ])
+  })
 
   if (!response.ok) {
     throw new Error(`Session lookup failed with status ${response.status}`)
   }
 
-  let parsed: { user?: { id?: string; email?: string | null } } | null = null
-  try {
-    parsed = JSON.parse(responseText) as { user?: { id?: string; email?: string | null } }
-  } catch (error) {
-    throw new Error('Session response was not valid JSON.')
-  }
+  const parsed = await response.json().catch(() => null) as { user?: { id?: string; email?: string | null } } | null
 
   const userId = parsed?.user?.id?.trim() ?? ''
   if (!userId) {
