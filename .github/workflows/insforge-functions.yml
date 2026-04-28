@@ -28,15 +28,9 @@ jobs:
         with:
           node-version: 24
 
-      - name: Login to InsForge
+      - name: Deploy function (using access token)
         env:
-          INSFORGE_EMAIL: ${{ secrets.INSFORGE_EMAIL }}
-          INSFORGE_PASSWORD: ${{ secrets.INSFORGE_PASSWORD }}
-        run: |
-          npx --yes @insforge/cli login --email "$INSFORGE_EMAIL" --password "$INSFORGE_PASSWORD" --json
-
-      - name: Deploy function
-        env:
+          INSFORGE_ACCESS_TOKEN: ${{ secrets.INSFORGE_ACCESS_TOKEN }}
           INSFORGE_PROJECT_ID: ${{ secrets.INSFORGE_PROJECT_ID }}
         run: |
           npx --yes @insforge/cli functions deploy reconcile-applications --file ./insforge/functions/reconcile-applications/index.ts --project-id "$INSFORGE_PROJECT_ID" --json -y
