@@ -28,9 +28,32 @@ jobs:
         with:
           node-version: 24
 
-      - name: Deploy function (using access token)
+      - name: Setup InsForge credentials and project
         env:
           INSFORGE_ACCESS_TOKEN: ${{ secrets.INSFORGE_ACCESS_TOKEN }}
           INSFORGE_PROJECT_ID: ${{ secrets.INSFORGE_PROJECT_ID }}
         run: |
-          npx --yes @insforge/cli functions deploy reconcile-applications --file ./insforge/functions/reconcile-applications/index.ts --json -y
+          mkdir -p ~/.insforge
+          # Create credentials file
+          cat > ~/.insforge/credentials.json <<EOF
+          {
+            "access_token": "$INSFORGE_ACCESS_TOKEN",
+            "refresh_token": null,
+            "user": { "id": "ci-user" }
+          }
+          EOF
+          # Create project.json (project ID is enough for authenticated deploys)
+          cat > .insforge/project.json <<EOF
+          {
+            "project_id": "$INSFORGE_PROJECT_ID",
+            "project_name": "job-trackr",
+            "org_id": "fe8bcacb-8556-47e3-9aad-d005bd3537a5",
+            "appkey": "a6aw86in",
+            "region": "eu-central",
+            "oss_host": "https://a6aw86in.eu-central.insforge.app"
+          }
+          EOF
+
+      - name: Deploy function
+        run: |
+          npx --yes @insforge/cli functions deploy reconcile-applications --file ./insforge/functions/reconcile-applications/index.ts
