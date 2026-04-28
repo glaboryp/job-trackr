@@ -42,8 +42,14 @@ jobs:
           }
           EOF
 
+      - name: Link InsForge project
+        env:
+          INSFORGE_PROJECT_ID: ${{ secrets.INSFORGE_PROJECT_ID }}
+        run: |
+          npx --yes @insforge/cli link --project-id "$INSFORGE_PROJECT_ID" --org-id "fe8bcacb-8556-47e3-9aad-d005bd3537a5" --json -y
+
       - name: Deploy function
         env:
           INSFORGE_PROJECT_ID: ${{ secrets.INSFORGE_PROJECT_ID }}
         run: |
-          npx --yes @insforge/cli functions deploy reconcile-applications --file ./insforge/functions/reconcile-applications/index.ts
+          npx --yes @insforge/cli functions deploy reconcile-applications --file ./insforge/functions/reconcile-applications/index.ts --json -y
