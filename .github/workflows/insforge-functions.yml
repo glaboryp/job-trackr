@@ -28,24 +28,11 @@ jobs:
         with:
           node-version: 24
 
-      - name: Validate InsForge token and Link project
+      - name: Deploy function (non-interactive)
         env:
           INSFORGE_ACCESS_TOKEN: ${{ secrets.INSFORGE_ACCESS_TOKEN }}
           INSFORGE_PROJECT_ID: ${{ secrets.INSFORGE_PROJECT_ID }}
         run: |
-          # Validate access token via platform API to avoid interactive OAuth flow
-          echo "Validating INSFORGE_ACCESS_TOKEN..."
-          resp=$(curl -sfS -H "Authorization: Bearer $INSFORGE_ACCESS_TOKEN" https://api.insforge.dev/api/auth/sessions/current || true)
-          if [ -z "$resp" ]; then
-            echo "ERROR: INSFORGE_ACCESS_TOKEN appears invalid or expired. Aborting."
-            exit 1
-          fi
-          echo "Token valid. Proceeding to link project."
-          npx --yes @insforge/cli link --project-id "$INSFORGE_PROJECT_ID" --org-id "fe8bcacb-8556-47e3-9aad-d005bd3537a5" --json -y
-
-      - name: Deploy function
-        env:
-          INSFORGE_ACCESS_TOKEN: ${{ secrets.INSFORGE_ACCESS_TOKEN }}
-          INSFORGE_PROJECT_ID: ${{ secrets.INSFORGE_PROJECT_ID }}
-        run: |
+          # Deploy directly using INSFORGE_ACCESS_TOKEN + INSFORGE_PROJECT_ID environment variables
+          # The CLI accepts these env vars and should not require interactive login or link.
           npx --yes @insforge/cli functions deploy reconcile-applications --file ./insforge/functions/reconcile-applications/index.ts --json -y
