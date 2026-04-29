@@ -28,28 +28,17 @@ jobs:
         with:
           node-version: 24
 
-      - name: Setup InsForge credentials
-        env:
-          INSFORGE_ACCESS_TOKEN: ${{ secrets.INSFORGE_ACCESS_TOKEN }}
-        run: |
-          mkdir -p ~/.insforge
-          # Create credentials file for CLI authentication
-          cat > ~/.insforge/credentials.json <<EOF
-          {
-            "access_token": "$INSFORGE_ACCESS_TOKEN",
-            "refresh_token": null,
-            "user": { "id": "ci-user" }
-          }
-          EOF
-
       - name: Link InsForge project
         env:
+          INSFORGE_ACCESS_TOKEN: ${{ secrets.INSFORGE_ACCESS_TOKEN }}
           INSFORGE_PROJECT_ID: ${{ secrets.INSFORGE_PROJECT_ID }}
         run: |
+          npx --yes @insforge/cli whoami --json
           npx --yes @insforge/cli link --project-id "$INSFORGE_PROJECT_ID" --org-id "fe8bcacb-8556-47e3-9aad-d005bd3537a5" --json -y
 
       - name: Deploy function
         env:
+          INSFORGE_ACCESS_TOKEN: ${{ secrets.INSFORGE_ACCESS_TOKEN }}
           INSFORGE_PROJECT_ID: ${{ secrets.INSFORGE_PROJECT_ID }}
         run: |
           npx --yes @insforge/cli functions deploy reconcile-applications --file ./insforge/functions/reconcile-applications/index.ts --json -y
