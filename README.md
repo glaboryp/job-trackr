@@ -15,7 +15,7 @@ Esta versión inicial (MVP) se centra en la experiencia core de gestión local:
 - **Persistencia**: Todos los datos se guardan automáticamente en el `localStorage` de tu navegador.
 - **Empty State**: Interfaz optimizada para cuando aún no tienes candidaturas.
 
-## 🛠️ Stack Técnico
+## 🛠️ Stack Tecnológico
 
 - **Framework**: Vue 3 (Composition API + `<script setup>`)
 - **Build Tool**: Vite
@@ -43,19 +43,22 @@ Sigue estos pasos para levantar el proyecto localmente:
    pnpm dev
    ```
 
-## 🔐 Configuración Auth (InsForge)
+## 🔐 Inicio de Sesión y Sync (InsForge)
 
-El proyecto soporta dos modos:
+Se incluye autenticación con InsForge:
 
-- **Modo anónimo**: usa `localStorage`, no requiere login.
-- **Modo autenticado**: activa email/password + sync remoto con InsForge.
+- **Signup**: crea una cuenta nueva con email y contraseña.
+- **Login**: inicia sesión con email y contraseña.
+- **Reset de contraseña**: solicita un enlace para recuperar acceso.
+- **Sync remoto**: al iniciar sesión, la app puede unificar candidaturas locales y remotas.
+- **Modo anónimo**: si no activas auth, la app sigue funcionando con `localStorage`.
 
-1. Copia el ejemplo de entorno:
+1. Copiar el fichero de ejemplo de variables de entorno:
    ```bash
    cp .env.example .env
    ```
 
-2. Completa variables públicas del cliente:
+2. Completa las variables públicas del cliente:
    ```bash
    VITE_INSFORGE_URL=https://<appkey>.<region>.insforge.app
    VITE_INSFORGE_ANON_KEY=<public-anon-key>
@@ -67,10 +70,12 @@ El proyecto soporta dos modos:
    VITE_INSFORGE_AUTH_ENABLED=false
    ```
 
-Notas importantes:
+## 🔄 Auth + Sync (Resumen de Flujo)
 
-- No uses `api_key` de `.insforge/project.json` en frontend.
-- No guardes tokens de acceso manualmente en `localStorage`.
+- El bootstrap detecta sesión y define estado global:
+   - `anonymous`, `authenticated`, `conflict_required`, `reconciling`, `error`.
+- Si hay datos locales y remotos al hacer login:
+   - se muestra una **modal bloqueante** con opciones `merge`, `keep_account`, `keep_local`.
 
 ## ⌨️ Comandos Útiles
 
@@ -80,20 +85,15 @@ Notas importantes:
 - `pnpm preview`: Previsualiza localmente la build de producción.
 - `pnpm test -- --run`: Ejecuta suite completa en modo CI.
 
-## 🔄 Auth + Sync (Resumen de Flujo)
+## 🚀 Deploy manual de la function
 
-- El bootstrap detecta sesión y define estado global:
-   - `anonymous`, `authenticated`, `conflict_required`, `reconciling`, `error`.
-- Si hay datos locales y remotos al hacer login:
-   - se muestra una **modal bloqueante** con opciones `merge`, `keep_account`, `keep_local`.
-- En signup con datos locales y sin remoto:
-   - se dispara migración automática local -> cuenta.
+Cuando se modifique la lógica de sincronización o resolución de conflictos, desplegar la función de InsForge manualmente:
 
-## 🧭 Runbook Operacional
+```bash
+npx @insforge/cli functions deploy reconcile-applications
+```
 
-Para operación, rollback y checklist post-deploy:
-
-- Ver [docs/auth-sync-runbook.md](docs/auth-sync-runbook.md).
+Si ya estás autenticada en el CLI y el proyecto está vinculado, este comando actualiza la function `reconcile-applications` en InsForge.
 
 ## 📂 Estructura del Proyecto
 
