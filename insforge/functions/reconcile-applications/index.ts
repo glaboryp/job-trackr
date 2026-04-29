@@ -76,16 +76,15 @@ function payloadToRow(userId: string, payload: ApplicationPayload, existingRow?:
   }
 }
 
-const allowedOrigins = new Set([
-  'http://127.0.0.1:5173',
-  'http://127.0.0.1:5174',
-  'http://localhost:5173',
-  'http://localhost:5174',
-  'https://job-trackr-wine.vercel.app'
-])
-
 function getCorsHeaders(origin: string | null): HeadersInit {
-  const allowOrigin = origin && allowedOrigins.has(origin) ? origin : '*'
+  const isAllowedOrigin = Boolean(
+    origin && (
+      origin.endsWith('.vercel.app') ||
+      origin.startsWith('http://127.0.0.1:') ||
+      origin.startsWith('http://localhost:')
+    )
+  )
+  const allowOrigin = isAllowedOrigin && origin ? origin : 'https://job-trackr-wine.vercel.app'
 
   return {
     'Access-Control-Allow-Origin': allowOrigin,
@@ -106,7 +105,7 @@ function jsonResponse(body: unknown, init: ResponseInit = {}, origin: string | n
   return new Response(JSON.stringify(body), {
     ...init,
     headers,
-  ])
+  })
 }
 function unauthorized(message = 'Missing or invalid bearer token.', origin: string | null = null): Response {
   return jsonResponse({ error: message }, { status: 401 }, origin)
