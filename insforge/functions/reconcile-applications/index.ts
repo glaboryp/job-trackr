@@ -12,6 +12,7 @@ type ApplicationPayload = {
   dateApplied: string
   url: string
   notes: string
+  isInteresting: boolean
 }
 
 type ReconcileRequest = {
@@ -38,6 +39,7 @@ type RemoteApplicationRecord = {
   date_applied: string
   url: string | null
   notes: string | null
+  is_interesting: boolean
   created_at: string
   updated_at: string
   sync_origin: 'local' | 'remote' | 'merge'
@@ -54,6 +56,7 @@ function rowToPayload(row: RemoteApplicationRecord): ApplicationPayload {
     dateApplied: row.date_applied,
     url: row.url ?? '',
     notes: row.notes ?? '',
+    isInteresting: row.is_interesting ?? false,
   }
 }
 
@@ -70,6 +73,7 @@ function payloadToRow(userId: string, payload: ApplicationPayload, existingRow?:
     date_applied: payload.dateApplied,
     url: payload.url || null,
     notes: payload.notes || null,
+    is_interesting: payload.isInteresting ?? false,
     sync_origin: 'merge',
     created_at: existingRow?.created_at || now,
     updated_at: now,

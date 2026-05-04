@@ -136,6 +136,19 @@
           />
         </div>
 
+        <div class="flex items-center gap-3">
+          <input
+            id="isInteresting"
+            v-model="form.isInteresting"
+            data-testid="application-interesting"
+            type="checkbox"
+            class="h-5 w-5 cursor-pointer border-2 border-zinc-900 accent-indigo-600 focus:outline-none focus-visible:ring-4 focus-visible:ring-indigo-500/20"
+          />
+          <label for="isInteresting" class="text-sm font-bold uppercase tracking-widest text-zinc-900">
+            Oferta interesante
+          </label>
+        </div>
+
         <div>
           <label for="notes" class="mb-2 block text-sm font-bold uppercase tracking-widest text-zinc-900">Notas</label>
           <textarea 
@@ -202,7 +215,8 @@ const createDefaultForm = (): Omit<Application, 'id'> => ({
   workLocation: '',
   dateApplied: new Date().toISOString().split('T')[0],
   url: '',
-  notes: ''
+  notes: '',
+  isInteresting: false,
 })
 
 const form = ref<Omit<Application, 'id'> | Application>(createDefaultForm())

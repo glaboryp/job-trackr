@@ -13,7 +13,8 @@ describe('JobCard.vue', () => {
     status: 'Aplicado',
     dateApplied: '2023-10-01',
     url: 'https://example.com/job',
-    notes: 'Looking forward to it.'
+    notes: 'Looking forward to it.',
+    isInteresting: false,
   }
 
   it('renders correctly with all provided application fields', () => {

@@ -11,4 +11,5 @@ export type Application = {
   dateApplied: string
   url: string
   notes: string
+  isInteresting: boolean
 }

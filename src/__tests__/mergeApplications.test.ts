@@ -15,6 +15,7 @@ function createLocalApplication(overrides: Partial<Application> = {}): Applicati
     dateApplied: '2026-04-21',
     url: '',
     notes: '',
+    isInteresting: false,
     ...overrides,
   }
 }
@@ -31,6 +32,7 @@ function createRemoteRecord(overrides: Partial<RemoteApplicationRecord> = {}): R
     date_applied: '2026-04-21',
     url: '',
     notes: '',
+    is_interesting: false,
     created_at: '2026-04-21T08:00:00.000Z',
     updated_at: '2026-04-22T08:00:00.000Z',
     sync_origin: 'remote',

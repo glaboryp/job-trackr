@@ -42,7 +42,8 @@ describe('ApplicationForm.vue', () => {
       modality: 'Presencial',
       workLocation: 'Madrid',
       url: 'https://test.com',
-      notes: 'Some notes'
+      notes: 'Some notes',
+      isInteresting: true,
     }
     
     const wrapper = mount(ApplicationForm, {

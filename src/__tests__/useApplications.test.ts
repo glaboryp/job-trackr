@@ -15,6 +15,7 @@ type ApplicationInput = {
   dateApplied: string
   url: string
   notes: string
+  isInteresting: boolean
 }
 
 function createInput(overrides: Partial<ApplicationInput> = {}): ApplicationInput {
@@ -27,6 +28,7 @@ function createInput(overrides: Partial<ApplicationInput> = {}): ApplicationInpu
     dateApplied: '2026-04-13',
     url: 'https://example.com/jobs/1',
     notes: 'Initial contact',
+    isInteresting: false,
     ...overrides,
   }
 }

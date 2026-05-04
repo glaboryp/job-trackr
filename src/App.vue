@@ -27,6 +27,7 @@ const editingApplicationId = ref<string | null>(null)
 const searchQuery = ref('')
 const modalityFilter = ref<'all' | Application['modality']>('all')
 const statusFilter = ref<'all' | ApplicationStatus>('all')
+const interestFilter = ref<'all' | 'interesting' | 'not-interesting'>('all')
 const sortBy = ref<'dateApplied-desc' | 'dateApplied-asc' | 'status-asc' | 'status-desc'>('dateApplied-desc')
 
 const isAuthBusy = ref(false)
@@ -74,7 +75,13 @@ const visibleApplications = computed(() => {
     ? filteredByModality
     : filteredByModality.filter(({ application }) => application.status === statusFilter.value)
 
-  const sorted = [...filteredByStatus].sort((left, right) => {
+  const filteredByInterest = interestFilter.value === 'all'
+    ? filteredByStatus
+    : filteredByStatus.filter(({ application }) => (
+      interestFilter.value === 'interesting' ? application.isInteresting : !application.isInteresting
+    ))
+
+  const sorted = [...filteredByInterest].sort((left, right) => {
     let comparison = 0
 
     if (sortBy.value === 'dateApplied-asc' || sortBy.value === 'dateApplied-desc') {
@@ -154,6 +161,7 @@ function toApplicationInput(payload: ApplicationSavePayload): Omit<Application, 
     dateApplied: payload.dateApplied,
     url: payload.url,
     notes: payload.notes,
+    isInteresting: payload.isInteresting,
   }
 }
 
@@ -504,6 +512,20 @@ onMounted(() => {
               <option v-for="status in APPLICATION_STATUSES" :key="status" :value="status">
                 {{ status }}
               </option>
+            </select>
+          </div>
+
+          <div>
+            <label for="interest-filter" class="mb-2 block text-xs font-bold uppercase tracking-widest text-zinc-900">Interesante</label>
+            <select
+              id="interest-filter"
+              v-model="interestFilter"
+              data-testid="interest-filter"
+              class="block w-full cursor-pointer border-2 border-zinc-900 bg-white px-3 py-2 text-sm font-mono font-bold text-zinc-900 transition-all focus:outline-none focus-visible:border-indigo-600 focus-visible:ring-4 focus-visible:ring-indigo-500/20"
+            >
+              <option value="all">Todas</option>
+              <option value="interesting">Solo interesantes</option>
+              <option value="not-interesting">Solo no interesantes</option>
             </select>
           </div>
 

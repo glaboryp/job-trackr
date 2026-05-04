@@ -9,6 +9,7 @@ export type RemoteApplicationRecord = {
   date_applied: string
   url: string | null
   notes: string | null
+  is_interesting: boolean
   created_at: string
   updated_at: string
   sync_origin: 'local' | 'remote' | 'merge'

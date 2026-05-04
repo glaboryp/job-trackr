@@ -61,6 +61,10 @@ const safeUrl = computed(() => {
         <span class="font-mono text-xs uppercase tracking-widest text-zinc-500">Loc</span>
         <span class="job-location bg-indigo-50 border border-zinc-900 px-2 py-0.5 text-xs font-bold truncate">{{ application.workLocation || 'Ubicación no especificada' }}</span>
       </div>
+      <div v-if="application.isInteresting" class="flex items-center gap-2">
+        <span class="font-mono text-xs uppercase tracking-widest text-zinc-500">Fav</span>
+        <span class="job-interesting bg-amber-200 border border-zinc-900 px-2 py-0.5 text-xs font-bold">Interesante</span>
+      </div>
     </div>
 
     <div class="mb-4 flex items-center justify-between text-xs font-mono text-zinc-500 job-card-details border-y-2 border-dashed border-zinc-100 py-2">

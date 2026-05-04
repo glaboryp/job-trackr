@@ -58,6 +58,7 @@ describe('App auth integration', () => {
           dateApplied: '2026-04-22',
           url: '',
           notes: '',
+          isInteresting: false,
         },
       ],
     })
@@ -84,6 +85,7 @@ describe('App auth integration', () => {
         dateApplied: '2026-04-22',
         url: '',
         notes: '',
+        isInteresting: false,
       },
     ])
 
@@ -124,6 +126,7 @@ describe('App auth integration', () => {
         dateApplied: '2026-04-22',
         url: '',
         notes: '',
+        isInteresting: false,
       },
     ])
 
@@ -143,6 +146,7 @@ describe('App auth integration', () => {
           dateApplied: '2026-04-23',
           url: '',
           notes: '',
+          isInteresting: false,
         },
       ],
     })

@@ -8,10 +8,15 @@ type RemoteApplicationLike = Partial<RemoteApplicationRecord> & {
   jobTitle?: string
   workLocation?: string | null
   dateApplied?: string | null
+  isInteresting?: boolean
 }
 
 function readString(value: unknown, fallback = ''): string {
   return typeof value === 'string' ? value : fallback
+}
+
+function readBoolean(value: unknown, fallback = false): boolean {
+  return typeof value === 'boolean' ? value : fallback
 }
 
 export function toApplication(record: RemoteApplicationLike): Application {
@@ -19,6 +24,7 @@ export function toApplication(record: RemoteApplicationLike): Application {
   const jobTitle = readString(record.job_title ?? record.jobTitle)
   const workLocation = record.work_location ?? record.workLocation ?? ''
   const dateApplied = readString(record.date_applied ?? record.dateApplied) || new Date().toISOString().split('T')[0]
+  const isInteresting = readBoolean(record.is_interesting ?? record.isInteresting)
 
   return {
     id: readString(record.id),
@@ -30,6 +36,7 @@ export function toApplication(record: RemoteApplicationLike): Application {
     dateApplied,
     url: readString(record.url),
     notes: readString(record.notes),
+    isInteresting,
   }
 }
 
@@ -44,6 +51,7 @@ export function toRemoteRecord(application: Application): Omit<RemoteApplication
     date_applied: application.dateApplied,
     url: application.url,
     notes: application.notes,
+    is_interesting: application.isInteresting,
     sync_origin: 'local',
   }
 }

@@ -290,6 +290,7 @@ export function createApplicationsService(): ApplicationsService {
         date_applied: application.dateApplied,
         url: application.url,
         notes: application.notes,
+        is_interesting: application.isInteresting,
         created_at: application.dateApplied,
         updated_at: application.dateApplied,
         sync_origin: 'remote',

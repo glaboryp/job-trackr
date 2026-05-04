@@ -44,6 +44,7 @@ function loadApplications(storageKey: string): Application[] {
       ...app,
       modality: normalizeApplicationModality(app.modality),
       workLocation: typeof app.workLocation === 'string' ? app.workLocation : '',
+      isInteresting: typeof app.isInteresting === 'boolean' ? app.isInteresting : false,
     }))
   } catch {
     return []

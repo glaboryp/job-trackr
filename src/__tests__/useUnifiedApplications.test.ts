@@ -48,6 +48,7 @@ describe('useUnifiedApplications', () => {
       dateApplied: '2026-04-25',
       url: '',
       notes: '',
+      isInteresting: false,
     })
 
     expect(store.source.value).toBe('local')
@@ -78,6 +79,7 @@ describe('useUnifiedApplications', () => {
       dateApplied: '2026-04-26',
       url: '',
       notes: '',
+      isInteresting: false,
     })
 
     expect(store.source.value).toBe('local')

@@ -41,12 +41,14 @@ describe('application domain contract', () => {
       dateApplied: '2026-04-13',
       url: 'https://example.com/job/1',
       notes: 'Initial screening completed',
+      isInteresting: false,
     }
 
     expect(Object.keys(application).sort()).toEqual([
       'companyName',
       'dateApplied',
       'id',
+      'isInteresting',
       'jobTitle',
       'modality',
       'notes',
