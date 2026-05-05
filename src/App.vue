@@ -472,7 +472,7 @@ onMounted(() => {
             </svg>
           </button>
         </div>
-        <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+        <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
           <div>
             <label for="search-query" class="mb-2 block text-xs font-bold uppercase tracking-widest text-zinc-900">Buscar</label>
             <input
