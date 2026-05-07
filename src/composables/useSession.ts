@@ -96,14 +96,18 @@ export function useSession() {
   async function logout(): Promise<void> {
     try {
       await authService.logout()
-    } catch {
-      // Keep the app usable as anonymous even if logout request fails.
+    } catch (error) {
+      console.warn('[logout] server logout failed', error)
     }
 
     user.value = null
     conflict.value = null
     errorMessage.value = null
     status.value = 'anonymous'
+
+    if (typeof globalThis.localStorage !== 'undefined') {
+      globalThis.localStorage.removeItem('job-trackr:applications')
+    }
   }
 
   function requireConflict(snapshot: ConflictSnapshot): void {

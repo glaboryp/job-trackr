@@ -1,6 +1,5 @@
 import { readInsforgeConfig } from '../../config/insforge'
 import { getInsforgeClient } from '../../lib/insforge/client'
-import { mergeApplicationsDeterministic } from '../../lib/sync/mergeApplications'
 import type { Application } from '../../types/application'
 import type { RemoteApplicationRecord } from '../../types/remoteApplication'
 import type { ReconcileRequest, ReconcileResult, ReconcileStrategy } from '../../types/sync'
@@ -32,6 +31,50 @@ function extractResponseData<T>(response: unknown): T {
   }
 
   return response as T
+}
+
+function normalizeReconcileResult(payload: unknown): ReconcileResult {
+  if (!isObject(payload)) {
+    throw new Error('Formato inválido de respuesta de sincronización')
+  }
+
+  const created = Number(payload.created ?? 0)
+  const updated = Number(payload.updated ?? 0)
+  const deleted = Number(payload.deleted ?? 0)
+  const skipped = Number(payload.skipped ?? 0)
+
+  if (!Number.isInteger(created) || created < 0) {
+    throw new Error('Conteo inválido de creados en sincronización')
+  }
+  if (!Number.isInteger(updated) || updated < 0) {
+    throw new Error('Conteo inválido de actualizados en sincronización')
+  }
+  if (!Number.isInteger(deleted) || deleted < 0) {
+    throw new Error('Conteo inválido de eliminados en sincronización')
+  }
+  if (!Number.isInteger(skipped) || skipped < 0) {
+    throw new Error('Conteo inválido de omitidos en sincronización')
+  }
+
+  const dataApplications = payload.applications
+  if (!Array.isArray(dataApplications)) {
+    throw new Error('Formato inválido de aplicaciones en sincronización')
+  }
+
+  const normalizedApplications = dataApplications.map((record) => {
+    if (!isObject(record)) {
+      throw new Error('Registro de aplicación inválido en sincronización')
+    }
+    return toApplication(record as RemoteApplicationRecord)
+  })
+
+  return {
+    created,
+    updated,
+    deleted,
+    skipped,
+    applications: normalizedApplications,
+  }
 }
 
 function resolveTable(client: unknown): TableQuery {
@@ -130,7 +173,12 @@ async function resolveFunctionResponse(client: unknown, name: string, payload: u
     })
 
     const responseText = await response.text()
+    const maxResponseSize = 10 * 1024 * 1024
     const contentType = response.headers.get('content-type') ?? ''
+
+    if (responseText.length > maxResponseSize) {
+      throw new Error('La respuesta del servidor es demasiado grande')
+    }
 
     if (!response.ok) {
       lastError = new Error(`Function call failed with status ${response.status}`)
@@ -149,7 +197,7 @@ async function resolveFunctionResponse(client: unknown, name: string, payload: u
     try {
       return JSON.parse(responseText)
     } catch (error) {
-      throw new Error(`Unexpected token while parsing function response: ${responseText.slice(0, 300)}`)
+      throw new Error('La respuesta del servidor no es JSON válido')
     }
   }
 
@@ -222,6 +270,10 @@ export function createApplicationsService(): ApplicationsService {
     },
 
     async deleteRemoteApplication(id) {
+      if (!id || typeof id !== 'string' || !/^[a-zA-Z0-9\-_]+$/.test(id)) {
+        throw new Error('Formato de ID de aplicación no válido')
+      }
+
       const config = readInsforgeConfig({ strict: true })
       const baseUrl = config.baseUrl.replace(/\/$/, '')
       const client = await getInsforgeClient()
@@ -231,7 +283,9 @@ export function createApplicationsService(): ApplicationsService {
         throw new Error('No authentication token available. Cannot delete remote application.')
       }
 
-      const deleteUrl = `${baseUrl}/api/database/records/applications?id=eq.${id}`
+      const params = new URLSearchParams()
+      params.set('id', `eq.${id}`)
+      const deleteUrl = `${baseUrl}/api/database/records/applications?${params.toString()}`
       const response = await fetch(deleteUrl, {
         method: 'DELETE',
         headers: {
@@ -240,7 +294,7 @@ export function createApplicationsService(): ApplicationsService {
       })
 
       if (!response.ok) {
-        throw new Error(`Failed to delete application: ${response.status}`)
+        throw new Error(`Error al eliminar la aplicación: ${response.status}`)
       }
     },
 
@@ -262,47 +316,7 @@ export function createApplicationsService(): ApplicationsService {
 
       const payload = extractResponseData<unknown>(response)
 
-      if (isObject(payload)) {
-        const dataApplications = payload.applications
-        
-        const normalizedApplications = Array.isArray(dataApplications)
-          ? (dataApplications as RemoteApplicationRecord[]).map((record) => toApplication(record))
-          : []
-
-        return {
-          created: Number(payload.created ?? 0),
-          updated: Number(payload.updated ?? 0),
-          deleted: Number(payload.deleted ?? 0),
-          skipped: Number(payload.skipped ?? 0),
-          applications: normalizedApplications,
-        }
-      }
-
-      const remoteApplications = await this.listRemoteApplications()
-      const merged = mergeApplicationsDeterministic(localApplications, remoteApplications.map((application) => ({
-        id: application.id,
-        user_id: '',
-        company_name: application.companyName,
-        job_title: application.jobTitle,
-        status: application.status,
-        modality: application.modality,
-        work_location: application.workLocation,
-        date_applied: application.dateApplied,
-        url: application.url,
-        notes: application.notes,
-        is_interesting: application.isInteresting,
-        created_at: application.dateApplied,
-        updated_at: application.dateApplied,
-        sync_origin: 'remote',
-      })))
-
-      return {
-        created: 0,
-        updated: 0,
-        deleted: 0,
-        skipped: 0,
-        applications: request.strategy === 'keep_local' ? localApplications : merged,
-      }
+      return normalizeReconcileResult(payload)
     },
   }
 }

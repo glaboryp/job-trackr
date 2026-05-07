@@ -11,20 +11,25 @@ export async function getInsforgeClient(): Promise<unknown> {
     return cachedClient
   }
 
-  const config = readInsforgeConfig({ strict: true })
-  const sdkModule = (await import('@insforge/sdk')) as InsforgeSdkModule
-  const createClient = sdkModule.createClient
+  try {
+    const config = readInsforgeConfig({ strict: true })
+    const sdkModule = (await import('@insforge/sdk')) as InsforgeSdkModule
+    const createClient = sdkModule.createClient
 
-  if (typeof createClient !== 'function') {
-    throw new Error('InsForge SDK does not expose createClient()')
+    if (typeof createClient !== 'function') {
+      throw new Error('InsForge SDK does not expose createClient()')
+    }
+
+    cachedClient = createClient({
+      baseUrl: config.baseUrl,
+      anonKey: config.anonKey,
+    })
+
+    return cachedClient
+  } catch (error) {
+    cachedClient = null
+    throw error
   }
-
-  cachedClient = createClient({
-    baseUrl: config.baseUrl,
-    anonKey: config.anonKey,
-  })
-
-  return cachedClient
 }
 
 export function resetInsforgeClientCache(): void {

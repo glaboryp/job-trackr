@@ -3,6 +3,14 @@ import { normalizeApplicationStatus } from '../../constants/statuses'
 import type { Application } from '../../types/application'
 import type { RemoteApplicationRecord } from '../../types/remoteApplication'
 
+const LIMITS = {
+  companyName: 200,
+  jobTitle: 200,
+  workLocation: 300,
+  url: 2048,
+  notes: 5000,
+} as const
+
 type RemoteApplicationLike = Partial<RemoteApplicationRecord> & {
   companyName?: string
   jobTitle?: string
@@ -17,6 +25,43 @@ function readString(value: unknown, fallback = ''): string {
 
 function readBoolean(value: unknown, fallback = false): boolean {
   return typeof value === 'boolean' ? value : fallback
+}
+
+export function validateApplicationData(app: unknown): void {
+  if (!app || typeof app !== 'object') {
+    throw new Error('Datos de aplicación inválidos')
+  }
+
+  const errors: string[] = []
+  const a = app as Record<string, unknown>
+
+  if (!a.companyName || typeof a.companyName !== 'string' || !a.companyName.trim()) {
+    errors.push('El nombre de la empresa es obligatorio')
+  } else if (a.companyName.length > LIMITS.companyName) {
+    errors.push(`El nombre de la empresa no puede exceder ${LIMITS.companyName} caracteres`)
+  }
+
+  if (!a.jobTitle || typeof a.jobTitle !== 'string' || !a.jobTitle.trim()) {
+    errors.push('El puesto es obligatorio')
+  } else if (a.jobTitle.length > LIMITS.jobTitle) {
+    errors.push(`El puesto no puede exceder ${LIMITS.jobTitle} caracteres`)
+  }
+
+  if (a.workLocation && typeof a.workLocation === 'string' && a.workLocation.length > LIMITS.workLocation) {
+    errors.push(`La ubicación no puede exceder ${LIMITS.workLocation} caracteres`)
+  }
+
+  if (a.url && typeof a.url === 'string' && a.url.length > LIMITS.url) {
+    errors.push(`La URL no puede exceder ${LIMITS.url} caracteres`)
+  }
+
+  if (a.notes && typeof a.notes === 'string' && a.notes.length > LIMITS.notes) {
+    errors.push(`Las notas no pueden exceder ${LIMITS.notes} caracteres`)
+  }
+
+  if (errors.length > 0) {
+    throw new Error(errors.join('; '))
+  }
 }
 
 export function toApplication(record: RemoteApplicationLike): Application {
@@ -41,6 +86,7 @@ export function toApplication(record: RemoteApplicationLike): Application {
 }
 
 export function toRemoteRecord(application: Application): Omit<RemoteApplicationRecord, 'user_id' | 'created_at' | 'updated_at'> {
+  validateApplicationData(application)
   return {
     id: application.id,
     company_name: application.companyName,

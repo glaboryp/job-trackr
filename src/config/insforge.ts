@@ -34,6 +34,22 @@ function readEnv(source: EnvSource, key: string): string {
   return toStringValue(source[key])
 }
 
+function validateBaseUrl(url: string): void {
+  if (!url.startsWith('https://')) {
+    throw new Error('VITE_INSFORGE_URL debe usar HTTPS')
+  }
+
+  if (!url.includes('.insforge.app')) {
+    throw new Error('VITE_INSFORGE_URL debe ser un dominio de InsForge')
+  }
+
+  try {
+    new URL(url)
+  } catch {
+    throw new Error('VITE_INSFORGE_URL no es una URL válida')
+  }
+}
+
 export function readInsforgeConfig(options: { strict?: boolean; source?: EnvSource } = {}): InsforgeClientConfig {
   const source = options.source ?? (import.meta.env as unknown as EnvSource)
   const strict = options.strict ?? true
@@ -47,6 +63,8 @@ export function readInsforgeConfig(options: { strict?: boolean; source?: EnvSour
 
     if (!baseUrl) {
       missingKeys.push('VITE_INSFORGE_URL')
+    } else {
+      validateBaseUrl(baseUrl)
     }
 
     if (!anonKey) {

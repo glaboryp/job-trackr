@@ -9,6 +9,7 @@ export type AuthErrorCode =
   | 'rate_limited'
   | 'network_error'
   | 'config_error'
+  | 'user_already_exists'
   | 'unknown_error'
 
 export type AuthServiceError = {

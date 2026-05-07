@@ -55,6 +55,21 @@ function normalizeAuthError(error: unknown, fallbackMessage: string): AuthServic
       }
     }
 
+    if (
+      status === 409 ||
+      sourceCode.includes('user_already_exists') ||
+      sourceCode.includes('email_exists') ||
+      sourceCode.includes('already_registered') ||
+      sourceCode.includes('user_exists')
+    ) {
+      return {
+        code: 'user_already_exists',
+        message: 'Ya existe una cuenta con ese email.',
+        retryable: false,
+        originalError: error,
+      }
+    }
+
     if (status === 429 || sourceCode.includes('rate_limit')) {
       return {
         code: 'rate_limited',
@@ -250,8 +265,8 @@ export function createAuthService(): AuthService {
             )
             const currentUserData = extractResponseData<unknown>(currentUserResponse)
             user = extractUser(currentUserData)
-          } catch {
-            // Ignore fallback failures and surface a clearer signup error below.
+          } catch (error) {
+            console.warn('[register] fallback current user failed', error)
           }
         }
 
@@ -288,13 +303,9 @@ export function createAuthService(): AuthService {
           throw new Error('Login response does not include user information.')
         }
 
-        // Ensure the access token is explicitly set on the HTTP client
-        // (SDK's Auth class should do this via saveSessionFromResponse, but we set it explicitly as a backup)
         const token = extractToken(data)
-        console.log('[login] token extracted:', !!token, token ? token.substring(0, 20) + '...' : 'null')
         if (token) {
           setClientToken(client, token)
-          console.log('[login] token set on HTTP client')
         }
 
         return user
@@ -321,8 +332,6 @@ export function createAuthService(): AuthService {
 
         extractResponseData<unknown>(response)
 
-        // Clear the auth token after logout
-        // (SDK might handle this too, but we explicitly clear it)
         setClientToken(client, null)
       } catch (error) {
         throw normalizeAuthError(error, 'No fue posible cerrar sesión.')
@@ -347,7 +356,6 @@ export function createAuthService(): AuthService {
         return extractUser(data)
       } catch (error) {
         const normalized = normalizeAuthError(error, 'No fue posible recuperar la sesión actual.')
-        // Silently return null for 401/403 (no active session)
         if (normalized.code === 'invalid_credentials' || normalized.code === 'unauthorized') {
           return null
         }

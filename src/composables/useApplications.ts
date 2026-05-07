@@ -46,7 +46,8 @@ function loadApplications(storageKey: string): Application[] {
       workLocation: typeof app.workLocation === 'string' ? app.workLocation : '',
       isInteresting: typeof app.isInteresting === 'boolean' ? app.isInteresting : false,
     }))
-  } catch {
+  } catch (error) {
+    console.warn('[loadApplications] invalid localStorage payload', error)
     return []
   }
 }
