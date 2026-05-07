@@ -101,14 +101,13 @@ const safeUrl = computed(() => {
       </button>
     </div>
 
-    <div class="mt-4 flex flex-col gap-2 job-card-mobile-status">
-      <label :for="'status-select-' + application.id" class="sr-only">Mover aplicación de estado</label>
+    <div class="mt-4 flex flex-col gap-2 md:hidden job-card-mobile-status">
+      <label :for="'status-select-' + application.id" class="text-xs font-mono font-bold uppercase tracking-widest text-zinc-600">Mover a:</label>
       <select 
         :id="'status-select-' + application.id"
         :value="application.status" 
-        class="sr-only focus:not-sr-only focus:absolute focus:z-10 focus:w-[calc(100%-2.5rem)] focus:bg-white focus:border-2 focus:border-zinc-900 focus:p-2 focus:text-sm focus:font-bold focus:text-zinc-900 focus:outline-none focus-visible:ring-4 focus-visible:ring-indigo-500/40 status-select shadow-[2px_2px_0px_0px_#18181b]"
+        class="w-full cursor-pointer bg-white border-2 border-zinc-900 p-2 text-sm font-bold text-zinc-900 focus:outline-none focus-visible:ring-4 focus-visible:ring-indigo-500/40 status-select shadow-[2px_2px_0px_0px_#18181b]"
         @change="handleStatusChange"
-        :aria-label="`Cambiar estado de ${application.companyName}`"
       >
         <option v-for="status in APPLICATION_STATUSES" :key="status" :value="status">
           {{ status }}
