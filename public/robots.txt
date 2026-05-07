@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://job-trackr-wine.vercel.app/sitemap.xml
