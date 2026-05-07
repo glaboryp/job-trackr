@@ -69,6 +69,11 @@ function submitSignup(): void {
     return
   }
 
+  if (!/\d/.test(password.value)) {
+    localError.value = 'La contraseña debe incluir al menos un número.'
+    return
+  }
+
   if (password.value !== confirmPassword.value) {
     localError.value = 'Las contraseñas no coinciden.'
     return
@@ -96,6 +101,11 @@ function submitResetConfirmation(): void {
 
   if (newPassword.value.length < 8) {
     localError.value = 'La nueva contraseña debe tener al menos 8 caracteres.'
+    return
+  }
+
+  if (!/\d/.test(newPassword.value)) {
+    localError.value = 'La nueva contraseña debe incluir al menos un número.'
     return
   }
 
