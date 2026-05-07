@@ -25,7 +25,7 @@ function selectStrategy(strategy: ReconcileStrategy): void {
 <template>
   <div
     v-if="isOpen"
-    class="fixed inset-0 z-[100] flex items-center justify-center bg-zinc-900/70 p-4"
+    class="fixed inset-0 z-100 flex items-center justify-center bg-zinc-900/70 p-4"
     role="dialog"
     aria-modal="true"
     aria-labelledby="conflict-modal-title"
@@ -76,7 +76,7 @@ function selectStrategy(strategy: ReconcileStrategy): void {
         </button>
       </div>
 
-      <p v-if="isReconciling" class="mt-4 text-xs font-semibold uppercase tracking-wider text-zinc-500">
+      <p v-if="isReconciling" class="mt-4 text-xs font-semibold uppercase tracking-wider text-zinc-600">
         Sincronizando, por favor espera...
       </p>
 

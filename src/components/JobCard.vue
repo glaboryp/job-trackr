@@ -34,8 +34,8 @@ const safeUrl = computed(() => {
     if (['http:', 'https:'].includes(url.protocol)) {
       return url.href
     }
-  } catch {
-    // Malformed URL or non-absolute
+  } catch (error) {
+    console.warn('[safeUrl] invalid URL', error)
   }
   return '#'
 })
@@ -54,20 +54,20 @@ const safeUrl = computed(() => {
     
     <div class="mb-4 flex flex-col gap-2 text-sm text-zinc-800 job-card-meta">
       <div class="flex items-center gap-2">
-        <span class="font-mono text-xs uppercase tracking-widest text-zinc-500">Mod</span>
+        <span class="font-mono text-xs uppercase tracking-widest text-zinc-600">Mod</span>
         <span class="job-modality bg-indigo-100 border border-zinc-900 px-2 py-0.5 text-xs font-bold">{{ application.modality || 'No especificada' }}</span>
       </div>
       <div class="flex items-center gap-2">
-        <span class="font-mono text-xs uppercase tracking-widest text-zinc-500">Loc</span>
+        <span class="font-mono text-xs uppercase tracking-widest text-zinc-600">Loc</span>
         <span class="job-location bg-indigo-50 border border-zinc-900 px-2 py-0.5 text-xs font-bold truncate">{{ application.workLocation || 'Ubicación no especificada' }}</span>
       </div>
       <div v-if="application.isInteresting" class="flex items-center gap-2">
-        <span class="font-mono text-xs uppercase tracking-widest text-zinc-500">Fav</span>
+        <span class="font-mono text-xs uppercase tracking-widest text-zinc-600">Fav</span>
         <span class="job-interesting bg-amber-200 border border-zinc-900 px-2 py-0.5 text-xs font-bold">Interesante</span>
       </div>
     </div>
 
-    <div class="mb-4 flex items-center justify-between text-xs font-mono text-zinc-500 job-card-details border-y-2 border-dashed border-zinc-100 py-2">
+    <div class="mb-4 flex items-center justify-between text-xs font-mono text-zinc-600 job-card-details border-y-2 border-dashed border-zinc-100 py-2">
       <span class="date-applied">{{ application.dateApplied }}</span>
       <a 
         v-if="application.url" 
@@ -81,7 +81,7 @@ const safeUrl = computed(() => {
       </a>
     </div>
 
-    <div class="mb-5 min-h-[1.5rem] job-card-notes">
+    <div class="mb-5 min-h-6 job-card-notes">
       <p v-if="application.notes" class="whitespace-pre-wrap text-sm font-medium text-zinc-700 notes-text line-clamp-3">{{ application.notes }}</p>
       <p v-else class="text-sm font-mono text-zinc-400 notes-empty before:content-['//_']">Sin notas</p>
     </div>
@@ -101,13 +101,14 @@ const safeUrl = computed(() => {
       </button>
     </div>
 
-    <div class="mt-4 flex flex-col gap-2 md:hidden job-card-mobile-status">
-      <label :for="'status-select-' + application.id" class="text-xs font-mono font-bold uppercase tracking-widest text-zinc-500">Mover a:</label>
+    <div class="mt-4 flex flex-col gap-2 job-card-mobile-status">
+      <label :for="'status-select-' + application.id" class="sr-only">Mover aplicación de estado</label>
       <select 
         :id="'status-select-' + application.id"
         :value="application.status" 
-        class="w-full cursor-pointer bg-white border-2 border-zinc-900 p-2 text-sm font-bold text-zinc-900 focus:outline-none focus-visible:ring-4 focus-visible:ring-indigo-500/40 status-select shadow-[2px_2px_0px_0px_#18181b]"
+        class="sr-only focus:not-sr-only focus:absolute focus:z-10 focus:w-[calc(100%-2.5rem)] focus:bg-white focus:border-2 focus:border-zinc-900 focus:p-2 focus:text-sm focus:font-bold focus:text-zinc-900 focus:outline-none focus-visible:ring-4 focus-visible:ring-indigo-500/40 status-select shadow-[2px_2px_0px_0px_#18181b]"
         @change="handleStatusChange"
+        :aria-label="`Cambiar estado de ${application.companyName}`"
       >
         <option v-for="status in APPLICATION_STATUSES" :key="status" :value="status">
           {{ status }}
@@ -116,4 +117,3 @@ const safeUrl = computed(() => {
     </div>
   </div>
 </template>
-

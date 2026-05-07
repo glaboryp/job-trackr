@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, onUnmounted, ref, nextTick } from 'vue'
+import { useFocusTrap } from '@vueuse/integrations/useFocusTrap'
 
 import ApplicationForm from './components/ApplicationForm.vue'
 import AuthPanel from './components/AuthPanel.vue'
@@ -33,6 +34,11 @@ const sortBy = ref<'dateApplied-desc' | 'dateApplied-asc' | 'status-asc' | 'stat
 const isAuthBusy = ref(false)
 const isBootstrapping = ref(true)
 const isAuthPanelOpen = ref(false)
+const authPanelRef = ref<HTMLElement | null>(null)
+
+const { activate: activateAuthTrap, deactivate: deactivateAuthTrap } = useFocusTrap(authPanelRef, {
+  allowOutsideClick: false,
+})
 
 const statusRank = new Map(APPLICATION_STATUSES.map((status, index) => [status, index]))
 
@@ -123,10 +129,18 @@ function clearAlerts(): void {
 
 function openAuthPanel(): void {
   isAuthPanelOpen.value = true
+  nextTick(() => {
+    try {
+      activateAuthTrap()
+    } catch (e) {
+      console.warn('Auth focus trap skipped:', e)
+    }
+  })
 }
 
 function closeAuthPanel(): void {
   isAuthPanelOpen.value = false
+  deactivateAuthTrap()
 }
 
 function openCreateForm(): void {
@@ -251,7 +265,8 @@ async function resolveAuthenticatedDataMode(): Promise<void> {
       localApplications: localSnapshot,
       remoteApplications: remoteSnapshot,
     })
-  } catch {
+  } catch (error) {
+    console.warn('[resolveAuthenticatedDataMode] remote sync failed', error)
     unifiedApplications.activateAnonymous()
     session.moveToAnonymousWithError('No se pudo sincronizar con tu cuenta. Continúas en modo anónimo.')
   }
@@ -282,7 +297,8 @@ async function handleLogin(credentials: AuthCredentials): Promise<void> {
     await session.login(credentials)
     await resolveAuthenticatedDataMode()
     isAuthPanelOpen.value = false
-  } catch {
+  } catch (error) {
+    console.warn('[handleLogin] login failed', error)
     session.moveToAnonymousWithError(session.errorMessage.value ?? 'No fue posible iniciar sesión.')
   } finally {
     isAuthBusy.value = false
@@ -297,7 +313,8 @@ async function handleSignup(credentials: AuthCredentials): Promise<void> {
     await session.signup(credentials)
     await resolveAuthenticatedDataMode()
     isAuthPanelOpen.value = false
-  } catch {
+  } catch (error) {
+    console.warn('[handleSignup] signup failed', error)
     session.moveToAnonymousWithError(session.errorMessage.value ?? 'No fue posible registrar la cuenta.')
   } finally {
     isAuthBusy.value = false
@@ -323,8 +340,8 @@ async function handleRequestPasswordReset(email: string): Promise<void> {
 
   try {
     await session.requestPasswordReset(email)
-  } catch {
-    // Error managed by useSession.
+  } catch (error) {
+    console.warn('[handleRequestPasswordReset] request failed', error)
   } finally {
     isAuthBusy.value = false
   }
@@ -336,8 +353,8 @@ async function handleConfirmPasswordReset(payload: { token?: string; newPassword
 
   try {
     await session.confirmPasswordReset(payload.newPassword, payload.token)
-  } catch {
-    // Error managed by useSession.
+  } catch (error) {
+    console.warn('[handleConfirmPasswordReset] confirm failed', error)
   } finally {
     isAuthBusy.value = false
   }
@@ -356,8 +373,8 @@ async function handleConflictResolution(strategy: ReconcileStrategy): Promise<vo
   try {
     await unifiedApplications.reconcile(strategy)
     session.resolveConflict()
-  } catch {
-    console.error('[handleConflictResolution] reconcile failed')
+  } catch (error) {
+    console.error('[handleConflictResolution] reconcile failed', error)
     session.requireConflict(pendingConflict)
     session.setRecoverableError('No se pudo resolver el conflicto. Puedes reintentar.')
   } finally {
@@ -560,7 +577,7 @@ onMounted(() => {
         </div>
         <h3 class="mb-3 text-2xl font-black uppercase tracking-tight text-zinc-900">Ninguna aplicación todavía</h3>
         <p class="mb-3 max-w-sm text-base font-medium text-zinc-600">Comienza a hacer un seguimiento de tus búsquedas de empleo creando tu primera aplicación.</p>
-        <p class="mb-8 max-w-sm text-sm font-mono text-zinc-500">
+        <p class="mb-8 max-w-sm text-sm font-mono text-zinc-600">
           Consejo: añade empresa, puesto y estado para ver tu tablero activo.
         </p>
         <button
@@ -614,6 +631,7 @@ onMounted(() => {
 
     <div
       v-if="isAuthPanelOpen"
+      ref="authPanelRef"
       class="fixed inset-0 z-50 flex items-center justify-center px-4 py-6"
       role="dialog"
       aria-modal="true"
@@ -643,7 +661,7 @@ onMounted(() => {
             @confirm-reset="handleConfirmPasswordReset"
             @clear-error="clearAlerts"
           />
-          <p v-if="!authEnabled" class="mt-3 text-[11px] font-mono text-zinc-500">
+          <p v-if="!authEnabled" class="mt-3 text-[11px] font-mono text-zinc-600">
             {{ authCtaLabel }} desde el panel cuando actives la autenticación.
           </p>
         </div>

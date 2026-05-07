@@ -1,7 +1,7 @@
 <template>
   <div
+    ref="modalRef"
     class="fixed inset-0 z-50 flex items-center justify-center bg-zinc-900/60 p-4 sm:p-0 backdrop-blur-sm"
-    @click.self="$emit('close')"
     @keydown.esc="$emit('close')"
   >
     <div
@@ -26,38 +26,38 @@
             id="companyName"
             v-model="form.companyName"
             type="text"
+            :maxlength="LIMITS.companyName"
             required
             aria-required="true"
             :aria-invalid="errors.companyName ? 'true' : 'false'"
-            :aria-describedby="errors.companyName ? 'companyName-error' : 'companyName-help'"
+            :aria-describedby="errors.companyName ? 'companyName-error' : undefined"
             :class="[
               'block w-full cursor-text border-2 px-3 py-2 text-sm font-mono text-zinc-900 placeholder-zinc-400 transition-all focus:outline-none focus-visible:ring-4 focus-visible:ring-indigo-500/20',
               errors.companyName ? 'border-rose-600 bg-rose-50 focus:border-rose-600' : 'border-zinc-900 focus:border-indigo-600'
             ]"
             placeholder="Ej: Tech Corp"
           />
-          <span id="companyName-help" class="mt-2 block text-xs font-mono text-zinc-500">Nombre de la empresa donde aplicaste.</span>
           <span v-if="errors.companyName" id="companyName-error" role="alert" class="mt-2 block text-xs font-bold uppercase tracking-wide text-rose-600 error-msg">{{ errors.companyName }}</span>
         </div>
 
         <div>
           <label for="jobTitle" class="mb-2 block text-sm font-bold uppercase tracking-widest text-zinc-900">Puesto <span class="text-indigo-600">*</span></label>
-          <input
+<input
             ref="jobTitleInput"
             id="jobTitle"
             v-model="form.jobTitle"
             type="text"
+            :maxlength="LIMITS.jobTitle"
             required
             aria-required="true"
             :aria-invalid="errors.jobTitle ? 'true' : 'false'"
-            :aria-describedby="errors.jobTitle ? 'jobTitle-error' : 'jobTitle-help'"
+            :aria-describedby="errors.jobTitle ? 'jobTitle-error' : undefined"
             :class="[
               'block w-full cursor-text border-2 px-3 py-2 text-sm font-mono text-zinc-900 placeholder-zinc-400 transition-all focus:outline-none focus-visible:ring-4 focus-visible:ring-indigo-500/20',
               errors.jobTitle ? 'border-rose-600 bg-rose-50 focus:border-rose-600' : 'border-zinc-900 focus:border-indigo-600'
             ]"
             placeholder="Ej: Frontend Developer"
           />
-          <span id="jobTitle-help" class="mt-2 block text-xs font-mono text-zinc-500">Puesto o rol de la vacante.</span>
           <span v-if="errors.jobTitle" id="jobTitle-error" role="alert" class="mt-2 block text-xs font-bold uppercase tracking-wide text-rose-600 error-msg">{{ errors.jobTitle }}</span>
         </div>
 
@@ -99,6 +99,7 @@
             data-testid="application-work-location"
             v-model="form.workLocation"
             type="text"
+            :maxlength="LIMITS.workLocation"
             :disabled="!isLocationRequired && form.modality === 'Remoto'"
             :aria-required="isLocationRequired ? 'true' : 'false'"
             :aria-invalid="errors.workLocation ? 'true' : 'false'"
@@ -110,7 +111,7 @@
             ]"
             placeholder="Ej: Madrid, España"
           />
-          <span id="workLocation-help" class="mt-2 block text-xs font-mono text-zinc-500">
+          <span id="workLocation-help" class="mt-2 block text-xs font-mono text-zinc-600">
             {{ isLocationRequired ? 'Indica ciudad o país para modalidad presencial/híbrida.' : 'No requerida para modalidad remota.' }}
           </span>
           <span v-if="errors.workLocation" id="workLocation-error" role="alert" class="mt-2 block text-xs font-bold uppercase tracking-wide text-rose-600 error-msg">{{ errors.workLocation }}</span>
@@ -131,9 +132,12 @@
             id="url" 
             v-model="form.url" 
             type="url" 
+            ref="urlInput"
+            :maxlength="LIMITS.url"
             placeholder="https://..." 
             class="block w-full cursor-text border-2 border-zinc-900 bg-white px-3 py-2 text-sm font-mono text-zinc-900 placeholder-zinc-400 transition-all focus:outline-none focus-visible:border-indigo-600 focus-visible:ring-4 focus-visible:ring-indigo-500/20"
           />
+          <span v-if="errors.url" id="url-error" role="alert" class="mt-2 block text-xs font-bold uppercase tracking-wide text-rose-600 error-msg">{{ errors.url }}</span>
         </div>
 
         <div class="flex items-center gap-3">
@@ -154,9 +158,12 @@
           <textarea 
             id="notes" 
             v-model="form.notes" 
+            ref="notesInput"
             rows="4"
+            :maxlength="LIMITS.notes"
             class="block w-full cursor-text resize-y border-2 border-zinc-900 bg-white px-3 py-2 text-sm font-mono text-zinc-900 placeholder-zinc-400 transition-all focus:outline-none focus-visible:border-indigo-600 focus-visible:ring-4 focus-visible:ring-indigo-500/20"
           ></textarea>
+          <span v-if="errors.notes" id="notes-error" role="alert" class="mt-2 block text-xs font-bold uppercase tracking-wide text-rose-600 error-msg">{{ errors.notes }}</span>
         </div>
 
         <p
@@ -190,7 +197,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch, nextTick, onMounted } from 'vue'
+import { ref, computed, watch, nextTick, onMounted, onUnmounted } from 'vue'
+import { useFocusTrap } from '@vueuse/integrations/useFocusTrap'
 import { APPLICATION_STATUSES } from '../constants/statuses'
 import { APPLICATION_MODALITIES } from '../constants/modalities'
 import type { Application } from '../types/application'
@@ -205,6 +213,14 @@ const emit = defineEmits<{
 }>()
 
 const isEdit = computed(() => !!props.initialData)
+
+const LIMITS = {
+  companyName: 200,
+  jobTitle: 200,
+  workLocation: 300,
+  url: 2048,
+  notes: 5000,
+} as const
 
 // Initialize with a default object pattern
 const createDefaultForm = (): Omit<Application, 'id'> => ({
@@ -223,11 +239,34 @@ const form = ref<Omit<Application, 'id'> | Application>(createDefaultForm())
 const companyNameInput = ref<HTMLInputElement | null>(null)
 const jobTitleInput = ref<HTMLInputElement | null>(null)
 const workLocationInput = ref<HTMLInputElement | null>(null)
+const urlInput = ref<HTMLInputElement | null>(null)
+const notesInput = ref<HTMLTextAreaElement | null>(null)
+const modalRef = ref<HTMLElement | null>(null)
+
+const { activate: activateFocusTrap, deactivate: deactivateFocusTrap } = useFocusTrap(modalRef, {
+  allowOutsideClick: false,
+})
+
+onMounted(() => {
+  nextTick(() => {
+    try {
+      activateFocusTrap()
+    } catch (e) {
+      console.warn('Focus trap activation skipped:', e)
+    }
+  })
+})
+
+onUnmounted(() => {
+  deactivateFocusTrap()
+})
 
 const errors = ref({
   companyName: '',
   jobTitle: '',
-  workLocation: ''
+  workLocation: '',
+  url: '',
+  notes: '',
 })
 
 const errorCount = computed(() => Object.values(errors.value).filter(Boolean).length)
@@ -246,6 +285,16 @@ function focusFirstInvalidField(): void {
 
   if (errors.value.workLocation) {
     workLocationInput.value?.focus()
+    return
+  }
+
+  if (errors.value.url) {
+    urlInput.value?.focus()
+    return
+  }
+
+  if (errors.value.notes) {
+    notesInput.value?.focus()
   }
 }
 
@@ -297,6 +346,24 @@ watch(
 )
 
 watch(
+  () => form.value.url,
+  (newValue) => {
+    if (errors.value.url && (!newValue || !newValue.trim())) {
+      errors.value.url = ''
+    }
+  }
+)
+
+watch(
+  () => form.value.notes,
+  (newValue) => {
+    if (errors.value.notes && (!newValue || !newValue.trim())) {
+      errors.value.notes = ''
+    }
+  }
+)
+
+watch(
   () => props.initialData,
   (newData) => {
     if (newData) {
@@ -305,7 +372,7 @@ watch(
       form.value = createDefaultForm()
     }
 
-    errors.value = { companyName: '', jobTitle: '', workLocation: '' }
+    errors.value = { companyName: '', jobTitle: '', workLocation: '', url: '', notes: '' }
     focusPrimaryField()
   },
   { immediate: true }
@@ -317,7 +384,7 @@ onMounted(() => {
 
 const handleSubmit = () => {
   // Reset errors
-  errors.value = { companyName: '', jobTitle: '', workLocation: '' }
+  errors.value = { companyName: '', jobTitle: '', workLocation: '', url: '', notes: '' }
   let isValid = true
 
   const companyNameTrimmed = form.value.companyName.trim()
@@ -327,15 +394,34 @@ const handleSubmit = () => {
   if (!companyNameTrimmed) {
     errors.value.companyName = 'La empresa es requerida'
     isValid = false
+  } else if (companyNameTrimmed.length > LIMITS.companyName) {
+    errors.value.companyName = `La empresa no puede exceder ${LIMITS.companyName} caracteres`
+    isValid = false
   }
 
   if (!jobTitleTrimmed) {
     errors.value.jobTitle = 'El puesto es requerido'
     isValid = false
+  } else if (jobTitleTrimmed.length > LIMITS.jobTitle) {
+    errors.value.jobTitle = `El puesto no puede exceder ${LIMITS.jobTitle} caracteres`
+    isValid = false
   }
   
   if (isLocationRequired.value && !workLocationTrimmed) {
     errors.value.workLocation = 'La ubicación es requerida'
+    isValid = false
+  } else if (workLocationTrimmed && workLocationTrimmed.length > LIMITS.workLocation) {
+    errors.value.workLocation = `La ubicación no puede exceder ${LIMITS.workLocation} caracteres`
+    isValid = false
+  }
+
+  if (form.value.url && form.value.url.length > LIMITS.url) {
+    errors.value.url = `La URL no puede exceder ${LIMITS.url} caracteres`
+    isValid = false
+  }
+
+  if (form.value.notes && form.value.notes.length > LIMITS.notes) {
+    errors.value.notes = `Las notas no pueden exceder ${LIMITS.notes} caracteres`
     isValid = false
   }
 
