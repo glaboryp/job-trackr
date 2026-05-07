@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, nextTick, tick } from 'vue'
+import { computed, onMounted, ref, nextTick } from 'vue'
 import { useFocusTrap } from '@vueuse/integrations/useFocusTrap'
 
 import ApplicationForm from './components/ApplicationForm.vue'
