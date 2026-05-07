@@ -327,7 +327,7 @@ async function handleLogout(): Promise<void> {
 
   try {
     await session.logout()
-    unifiedApplications.activateAnonymous()
+    unifiedApplications.reset()
     isAuthPanelOpen.value = false
   } finally {
     isAuthBusy.value = false

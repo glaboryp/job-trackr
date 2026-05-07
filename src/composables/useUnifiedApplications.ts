@@ -55,6 +55,13 @@ export function useUnifiedApplications(storageKey?: string) {
     remoteError.value = null
   }
 
+  function reset(): void {
+    applications.value = []
+    remoteApplications.value = []
+    source.value = 'local'
+    remoteError.value = null
+  }
+
   async function activateRemote(): Promise<void> {
     isSyncing.value = true
 
@@ -195,5 +202,6 @@ export function useUnifiedApplications(storageKey?: string) {
     deleteApplication,
     moveApplication,
     reconcile,
+    reset,
   }
 }
