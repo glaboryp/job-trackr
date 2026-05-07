@@ -178,7 +178,7 @@ function submitResetConfirmation(): void {
         </button>
       </div>
 
-      <div v-if="mode === 'login'" class="grid gap-2">
+      <form v-if="mode === 'login'" @submit.prevent="submitLogin" class="grid gap-2">
         <label class="text-[11px] font-bold uppercase tracking-wider text-zinc-700" for="auth-login-email">Email</label>
         <input
           id="auth-login-email"
@@ -202,11 +202,10 @@ function submitResetConfirmation(): void {
         >
 
         <button
-          type="button"
+          type="submit"
           class="mt-2 cursor-pointer border-2 border-zinc-900 bg-indigo-600 px-3 py-2 text-xs font-bold uppercase tracking-widest text-white"
           data-testid="auth-login-submit"
           :disabled="isBusy"
-          @click="submitLogin"
         >
           Iniciar sesión
         </button>
@@ -220,9 +219,9 @@ function submitResetConfirmation(): void {
         >
           Olvidé mi contraseña
         </button>
-      </div>
+      </form>
 
-      <div v-else-if="mode === 'signup'" class="grid gap-2">
+      <form v-else-if="mode === 'signup'" @submit.prevent="submitSignup" class="grid gap-2">
         <label class="text-[11px] font-bold uppercase tracking-wider text-zinc-700" for="auth-signup-email">Email</label>
         <input
           id="auth-signup-email"
@@ -265,9 +264,9 @@ function submitResetConfirmation(): void {
         >
           Crear cuenta
         </button>
-      </div>
+      </form>
 
-      <div v-else-if="mode === 'request-reset'" class="grid gap-2">
+      <form v-else-if="mode === 'request-reset'" @submit.prevent="submitResetRequest" class="grid gap-2">
         <label class="text-[11px] font-bold uppercase tracking-wider text-zinc-700" for="auth-reset-email">Email de recuperación</label>
         <input
           id="auth-reset-email"
@@ -307,9 +306,9 @@ function submitResetConfirmation(): void {
         >
           Volver a login
         </button>
-      </div>
+      </form>
 
-      <div v-else class="grid gap-2">
+      <form v-else @submit.prevent="submitResetConfirmation" class="grid gap-2">
         <label class="text-[11px] font-bold uppercase tracking-wider text-zinc-700" for="auth-reset-token">Token (opcional)</label>
         <input
           id="auth-reset-token"
@@ -332,11 +331,10 @@ function submitResetConfirmation(): void {
         >
 
         <button
-          type="button"
+          type="submit"
           class="mt-2 cursor-pointer border-2 border-zinc-900 bg-zinc-900 px-3 py-2 text-xs font-bold uppercase tracking-widest text-white"
           data-testid="auth-reset-confirm-submit"
           :disabled="isBusy"
-          @click="submitResetConfirmation"
         >
           Actualizar contraseña
         </button>
@@ -349,7 +347,7 @@ function submitResetConfirmation(): void {
         >
           Volver a login
         </button>
-      </div>
+      </form>
 
       <p
         v-if="localError || errorMessage"
