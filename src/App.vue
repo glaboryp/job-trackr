@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, nextTick } from 'vue'
+import { computed, onMounted, ref, nextTick, tick } from 'vue'
 import { useFocusTrap } from '@vueuse/integrations/useFocusTrap'
 
 import ApplicationForm from './components/ApplicationForm.vue'
@@ -296,6 +296,7 @@ async function handleLogin(credentials: AuthCredentials): Promise<void> {
   try {
     await session.login(credentials)
     await resolveAuthenticatedDataMode()
+    await nextTick()
     isAuthPanelOpen.value = false
   } catch (error) {
     console.warn('[handleLogin] login failed', error)
@@ -312,6 +313,7 @@ async function handleSignup(credentials: AuthCredentials): Promise<void> {
   try {
     await session.signup(credentials)
     await resolveAuthenticatedDataMode()
+    await nextTick()
     isAuthPanelOpen.value = false
   } catch (error) {
     console.warn('[handleSignup] signup failed', error)
