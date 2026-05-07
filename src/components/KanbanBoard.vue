@@ -66,7 +66,7 @@ function handleMobileStatusUpdate(id: string, status: string): void {
     <div 
       v-for="status in APPLICATION_STATUSES" 
       :key="status" 
-      class="shrink-0 w-80 xl:w-96 2xl:w-120 bg-white p-5 snap-center border-4 border-zinc-900 shadow-[8px_8px_0px_0px_#18181b] transition-all duration-200 focus-within:-translate-y-1 focus-within:shadow-[12px_12px_0px_0px_#18181b] focus-within:ring-4 focus-within:ring-indigo-500/30 kanban-column md:max-h-full h-auto flex flex-col"
+      class="flex-shrink-0 w-80 xl:w-96 2xl:w-[30rem] bg-white p-5 snap-center border-4 border-zinc-900 shadow-[8px_8px_0px_0px_#18181b] transition-all duration-200 focus-within:-translate-y-1 focus-within:shadow-[12px_12px_0px_0px_#18181b] focus-within:ring-4 focus-within:ring-indigo-500/30 kanban-column md:max-h-full h-auto flex flex-col"
     >
       <h3 class="text-lg font-black mb-5 flex-none flex justify-between items-center text-zinc-900 uppercase tracking-widest border-b-4 border-zinc-900 pb-3">
         {{ status }}
@@ -76,7 +76,7 @@ function handleMobileStatusUpdate(id: string, status: string): void {
       </h3>
       
       <div
-        class="flex-1 min-h-37.5 md:overflow-y-auto overflow-y-visible flex flex-col gap-5 transition-colors duration-200 kanban-cards pr-2 -mr-2"
+        class="flex-1 min-h-[150px] md:overflow-y-auto overflow-y-visible flex flex-col gap-5 transition-colors duration-200 kanban-cards pr-2 -mr-2"
         @dragover.prevent
         @drop="(event) => handleDrop(event, status)"
       >
