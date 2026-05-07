@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, nextTick } from 'vue'
+import { computed, onMounted, ref, nextTick, watch } from 'vue'
 import { useFocusTrap } from '@vueuse/integrations/useFocusTrap'
 
 import ApplicationForm from './components/ApplicationForm.vue'
@@ -38,6 +38,19 @@ const authPanelRef = ref<HTMLElement | null>(null)
 
 const { activate: activateAuthTrap, deactivate: deactivateAuthTrap } = useFocusTrap(authPanelRef, {
   allowOutsideClick: false,
+})
+
+watch(isAuthPanelOpen, async (isOpen) => {
+  if (isOpen) {
+    await nextTick()
+    try {
+      activateAuthTrap()
+    } catch (e) {
+      console.warn('Auth focus trap skipped:', e)
+    }
+  } else {
+    deactivateAuthTrap()
+  }
 })
 
 const statusRank = new Map(APPLICATION_STATUSES.map((status, index) => [status, index]))
@@ -129,18 +142,10 @@ function clearAlerts(): void {
 
 function openAuthPanel(): void {
   isAuthPanelOpen.value = true
-  nextTick(() => {
-    try {
-      activateAuthTrap()
-    } catch (e) {
-      console.warn('Auth focus trap skipped:', e)
-    }
-  })
 }
 
 function closeAuthPanel(): void {
   isAuthPanelOpen.value = false
-  deactivateAuthTrap()
 }
 
 function openCreateForm(): void {
