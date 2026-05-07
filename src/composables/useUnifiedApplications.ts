@@ -56,10 +56,10 @@ export function useUnifiedApplications(storageKey?: string) {
   }
 
   function reset(): void {
-    applications.value = []
     remoteApplications.value = []
     source.value = 'local'
     remoteError.value = null
+    localStore.replaceApplications([])
   }
 
   async function activateRemote(): Promise<void> {
