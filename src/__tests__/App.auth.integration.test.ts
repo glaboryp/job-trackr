@@ -1,5 +1,5 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { flushPromises, mount } from '@vue/test-utils'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { flushPromises, mount, type VueWrapper } from '@vue/test-utils'
 
 const authServiceMock = vi.hoisted(() => ({
   register: vi.fn(),
@@ -27,6 +27,21 @@ vi.mock('../services/data/applicationsService', () => ({
 }))
 
 import App from '../App.vue'
+
+let mountedWrapper: VueWrapper | null = null
+
+// The login button is type="submit" inside a <form>. jsdom only performs implicit
+// form submission for forms connected to the document, so App is attached like in
+// a real browser and unmounted after each test.
+function mountApp(): VueWrapper {
+  mountedWrapper = mount(App, { attachTo: document.body })
+  return mountedWrapper
+}
+
+afterEach(() => {
+  mountedWrapper?.unmount()
+  mountedWrapper = null
+})
 
 describe('App auth integration', () => {
   beforeEach(() => {
@@ -65,7 +80,7 @@ describe('App auth integration', () => {
   })
 
   it('shows blocking conflict modal after login when local and remote data coexist', async () => {
-    const wrapper = mount(App)
+    const wrapper = mountApp()
     await flushPromises()
 
     await wrapper.get('[data-testid="open-create"]').trigger('click')
@@ -106,7 +121,7 @@ describe('App auth integration', () => {
   })
 
   it('applies keep_local strategy when selected in conflict modal', async () => {
-    const wrapper = mount(App)
+    const wrapper = mountApp()
     await flushPromises()
 
     await wrapper.get('[data-testid="open-create"]').trigger('click')

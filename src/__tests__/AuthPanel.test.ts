@@ -1,11 +1,22 @@
-import { describe, expect, it } from 'vitest'
-import { mount } from '@vue/test-utils'
+import { afterEach, describe, expect, it } from 'vitest'
+import { mount, type VueWrapper } from '@vue/test-utils'
 
 import AuthPanel from '../components/AuthPanel.vue'
 
+let mountedWrapper: VueWrapper | null = null
+
+afterEach(() => {
+  mountedWrapper?.unmount()
+  mountedWrapper = null
+})
+
 describe('AuthPanel', () => {
   it('emits login credentials in login mode', async () => {
+    // The login button is type="submit" inside a <form>. jsdom only performs
+    // implicit form submission for forms connected to the document, so the
+    // component must be attached, like in a real browser.
     const wrapper = mount(AuthPanel, {
+      attachTo: document.body,
       props: {
         authEnabled: true,
         isBusy: false,
@@ -13,6 +24,7 @@ describe('AuthPanel', () => {
         errorMessage: null,
       },
     })
+    mountedWrapper = wrapper
 
     await wrapper.get('[data-testid="auth-login-email"]').setValue('user@example.com')
     await wrapper.get('[data-testid="auth-login-password"]').setValue('secret-123')
