@@ -20,6 +20,8 @@ jobs:
           cache: pnpm
       - name: Install deps
         run: pnpm install --frozen-lockfile
+      - name: Audit dependencies
+        run: pnpm audit --audit-level high
       - name: Run tests
         run: pnpm test -- --run
       - name: Build
