@@ -1,3 +1,7 @@
 auditConfig:
   ignoreGhsas:
     - GHSA-mrhx-c7xc-m3w5
+
+overrides:
+  "js-beautify>glob": "^14.0.2"
+  "editorconfig>minimatch": "^11.0.1"
