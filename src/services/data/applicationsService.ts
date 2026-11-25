@@ -1,215 +1,26 @@
-import { readInsforgeConfig } from '../../config/insforge'
-import { getInsforgeClient } from '../../lib/insforge/client'
+import { getSupabaseClient } from '../../lib/supabase/client'
 import type { Application } from '../../types/application'
 import type { RemoteApplicationRecord } from '../../types/remoteApplication'
 import type { ReconcileRequest, ReconcileResult, ReconcileStrategy } from '../../types/sync'
 import { toApplication, toRemoteRecord } from './applicationMapper'
 
-type GenericObject = Record<string, unknown>
-
-type TableQuery = {
-  select: (...args: unknown[]) => TableQuery | Promise<unknown>
-  order?: (...args: unknown[]) => TableQuery | Promise<unknown>
-  eq?: (...args: unknown[]) => TableQuery | Promise<unknown>
-  insert?: (...args: unknown[]) => Promise<unknown>
-  upsert?: (...args: unknown[]) => Promise<unknown>
-  update?: (...args: unknown[]) => TableQuery | Promise<unknown>
-  delete?: (...args: unknown[]) => TableQuery | Promise<unknown>
-}
-
-function isObject(value: unknown): value is GenericObject {
-  return typeof value === 'object' && value !== null
-}
-
-function extractResponseData<T>(response: unknown): T {
-  if (isObject(response) && 'error' in response && response.error) {
-    throw response.error
-  }
-
-  if (isObject(response) && 'data' in response) {
-    return response.data as T
-  }
-
-  return response as T
+function buildIdempotencyKey(strategy: ReconcileStrategy): string {
+  if (typeof globalThis.crypto?.randomUUID === 'function') return `${strategy}-${globalThis.crypto.randomUUID()}`
+  return `${strategy}-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`
 }
 
 function normalizeReconcileResult(payload: unknown): ReconcileResult {
-  if (!isObject(payload)) {
-    throw new Error('Formato inválido de respuesta de sincronización')
-  }
-
-  const created = Number(payload.created ?? 0)
-  const updated = Number(payload.updated ?? 0)
-  const deleted = Number(payload.deleted ?? 0)
-  const skipped = Number(payload.skipped ?? 0)
-
-  if (!Number.isInteger(created) || created < 0) {
-    throw new Error('Conteo inválido de creados en sincronización')
-  }
-  if (!Number.isInteger(updated) || updated < 0) {
-    throw new Error('Conteo inválido de actualizados en sincronización')
-  }
-  if (!Number.isInteger(deleted) || deleted < 0) {
-    throw new Error('Conteo inválido de eliminados en sincronización')
-  }
-  if (!Number.isInteger(skipped) || skipped < 0) {
-    throw new Error('Conteo inválido de omitidos en sincronización')
-  }
-
-  const dataApplications = payload.applications
-  if (!Array.isArray(dataApplications)) {
-    throw new Error('Formato inválido de aplicaciones en sincronización')
-  }
-
-  const normalizedApplications = dataApplications.map((record) => {
-    if (!isObject(record)) {
-      throw new Error('Registro de aplicación inválido en sincronización')
-    }
-    return toApplication(record as RemoteApplicationRecord)
-  })
-
+  if (!payload || typeof payload !== 'object') throw new Error('Respuesta de reconciliación inválida')
+  const result = payload as Record<string, unknown>
+  const applications = result.applications
+  if (!Array.isArray(applications)) throw new Error('Respuesta de reconciliación sin candidaturas')
   return {
-    created,
-    updated,
-    deleted,
-    skipped,
-    applications: normalizedApplications,
+    created: Number(result.created ?? 0),
+    updated: Number(result.updated ?? 0),
+    deleted: Number(result.deleted ?? 0),
+    skipped: Number(result.skipped ?? 0),
+    applications: applications.map((record) => toApplication(record as RemoteApplicationRecord)),
   }
-}
-
-function resolveTable(client: unknown): TableQuery {
-  if (!isObject(client)) {
-    throw new Error('InsForge client is not initialized correctly.')
-  }
-
-  const database = (client.database ?? client.db) as GenericObject | undefined
-  if (!database || typeof database.from !== 'function') {
-    throw new Error('InsForge database client is unavailable.')
-  }
-
-  const table = (database.from as (tableName: string) => unknown)('applications')
-
-  if (!isObject(table) || typeof table.select !== 'function') {
-    throw new Error('InsForge table interface is unavailable.')
-  }
-
-  return table as unknown as TableQuery
-}
-
-function extractTokenFromClient(client: unknown): string | null {
-  if (!isObject(client)) {
-    return null
-  }
-
-  const getHttpClient = (client as GenericObject).getHttpClient
-  if (typeof getHttpClient !== 'function') {
-    return null
-  }
-
-  const httpClient = getHttpClient.call(client)
-  if (!isObject(httpClient) || typeof httpClient.getHeaders !== 'function') {
-    return null
-  }
-
-  const headers = httpClient.getHeaders() as Record<string, string>
-  const authorization = headers.Authorization ?? headers.authorization ?? ''
-  if (authorization.toLowerCase().startsWith('bearer ')) {
-    return authorization.slice(7).trim()
-  }
-
-  return null
-}
-
-function resolveFunctionsBaseUrl(baseUrl: string): string {
-  const normalizedBaseUrl = baseUrl.replace(/\/$/, '')
-
-  if (normalizedBaseUrl.includes('.functions.insforge.app')) {
-    return normalizedBaseUrl
-  }
-
-  const match = normalizedBaseUrl.match(/^https:\/\/([^.]+)(?:\.[^.]+)?\.insforge\.app$/)
-  if (match) {
-    return `https://${match[1]}.functions.insforge.app`
-  }
-
-  return `${normalizedBaseUrl}/rest/v1/functions`
-}
-
-async function resolveFunctionResponse(client: unknown, name: string, payload: unknown, idempotencyKey: string): Promise<unknown> {
-  if (!isObject(client)) {
-    throw new Error('InsForge client is not initialized correctly.')
-  }
-
-  // Get the auth token from the client
-  const token = extractTokenFromClient(client)
-  if (!token) {
-    throw new Error('No authentication token available. Please log in first.')
-  }
-
-  const config = readInsforgeConfig({ strict: true })
-  const baseUrl = config.baseUrl.replace(/\/$/, '')
-  const functionsBaseUrl = resolveFunctionsBaseUrl(baseUrl)
-  const candidateUrls = [
-    `${functionsBaseUrl}/${name}`,
-  ]
-
-  if (functionsBaseUrl.endsWith('/rest/v1/functions')) {
-    candidateUrls.push(`${baseUrl.replace(/\/$/, '')}/rest/v1/functions/${name}`)
-  }
-
-  let lastError: Error | null = null
-
-  for (const functionUrl of candidateUrls) {
-
-    const response = await fetch(functionUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`,
-        'x-insforge-base-url': baseUrl,
-        'x-idempotency-key': idempotencyKey,
-      },
-      body: JSON.stringify(payload),
-    })
-
-    const responseText = await response.text()
-    const maxResponseSize = 10 * 1024 * 1024
-    const contentType = response.headers.get('content-type') ?? ''
-
-    if (responseText.length > maxResponseSize) {
-      throw new Error('La respuesta del servidor es demasiado grande')
-    }
-
-    if (!response.ok) {
-      lastError = new Error(`Function call failed with status ${response.status}`)
-
-      if (response.status === 404) {
-        continue
-      }
-
-      throw new Error(responseText || `Function call failed with status ${response.status}`)
-    }
-
-    if (!contentType.includes('application/json')) {
-      throw new Error(`Unexpected non-JSON response from function: ${responseText.slice(0, 300)}`)
-    }
-
-    try {
-      return JSON.parse(responseText)
-    } catch (error) {
-      throw new Error('La respuesta del servidor no es JSON válido')
-    }
-  }
-
-  throw lastError ?? new Error('Function endpoint not found.')
-}
-
-function buildIdempotencyKey(strategy: ReconcileStrategy): string {
-  if (typeof globalThis.crypto?.randomUUID === 'function') {
-    return `${strategy}-${globalThis.crypto.randomUUID()}`
-  }
-
-  return `${strategy}-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`
 }
 
 export type ApplicationsService = {
@@ -222,101 +33,48 @@ export type ApplicationsService = {
 export function createApplicationsService(): ApplicationsService {
   return {
     async listRemoteApplications() {
-      const client = await getInsforgeClient()
-      const table = resolveTable(client)
-
-      try {
-        let queryResult = await Promise.resolve(table.select('*'))
-        if (isObject(queryResult) && typeof queryResult.order === 'function') {
-          queryResult = await Promise.resolve((queryResult.order as (...args: unknown[]) => unknown)('updated_at', { ascending: false }))
-        }
-
-        const records = extractResponseData<RemoteApplicationRecord[]>(queryResult)
-        if (!Array.isArray(records)) {
-          return []
-        }
-
-        return records.map(toApplication)
-      } catch (err) {
-        console.error('[listRemoteApplications] error:', err)
-        throw err
-      }
+      const client = getSupabaseClient()
+      const { error: claimError } = await client.rpc('claim_legacy_applications')
+      if (claimError) throw claimError
+      const { data, error } = await client
+        .from('applications')
+        .select('*')
+        .order('updated_at', { ascending: false })
+      if (error) throw error
+      return (data ?? []).map((record) => toApplication(record as RemoteApplicationRecord))
     },
 
     async upsertRemoteApplication(application) {
-      const client = await getInsforgeClient()
-      const table = resolveTable(client)
-      const payload = toRemoteRecord(application)
+      const client = getSupabaseClient()
+      const { data: userData, error: userError } = await client.auth.getUser()
+      if (userError) throw userError
+      if (!userData.user) throw new Error('Inicia sesión antes de guardar candidaturas en Supabase.')
 
-      if (typeof table.upsert === 'function') {
-        const response = await Promise.resolve(table.upsert(payload))
-        const records = extractResponseData<RemoteApplicationRecord[] | RemoteApplicationRecord>(response)
-
-        if (Array.isArray(records) && records[0]) {
-          return toApplication(records[0])
-        }
-
-        if (isObject(records)) {
-          return toApplication(records as RemoteApplicationRecord)
-        }
-      }
-
-      if (typeof table.insert === 'function') {
-        const response = await Promise.resolve(table.insert(payload))
-        extractResponseData<unknown>(response)
-      }
-
-      return application
+      const { data, error } = await client
+        .from('applications')
+        .upsert({ ...toRemoteRecord(application), user_id: userData.user.id }, { onConflict: 'id' })
+        .select('*')
+        .single()
+      if (error) throw error
+      return toApplication(data as RemoteApplicationRecord)
     },
 
     async deleteRemoteApplication(id) {
       if (!id || typeof id !== 'string' || !/^[a-zA-Z0-9\-_]+$/.test(id)) {
         throw new Error('Formato de ID de aplicación no válido')
       }
-
-      const config = readInsforgeConfig({ strict: true })
-      const baseUrl = config.baseUrl.replace(/\/$/, '')
-      const client = await getInsforgeClient()
-      const token = extractTokenFromClient(client)
-      
-      if (!token) {
-        throw new Error('No authentication token available. Cannot delete remote application.')
-      }
-
-      const params = new URLSearchParams()
-      params.set('id', `eq.${id}`)
-      const deleteUrl = `${baseUrl}/api/database/records/applications?${params.toString()}`
-      const response = await fetch(deleteUrl, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      })
-
-      if (!response.ok) {
-        throw new Error(`Error al eliminar la aplicación: ${response.status}`)
-      }
+      const { error } = await getSupabaseClient().from('applications').delete().eq('id', id)
+      if (error) throw error
     },
 
     async reconcileApplications(request) {
-      const idempotencyKey = buildIdempotencyKey(request.strategy)
-      const client = await getInsforgeClient()
-
-      const localApplications = request.localApplications
-      
-      const response = await resolveFunctionResponse(
-        client,
-        'reconcile-applications',
-        {
-          strategy: request.strategy,
-          local_applications: localApplications,
-        },
-        idempotencyKey,
-      )
-
-      const payload = extractResponseData<unknown>(response)
-
-      return normalizeReconcileResult(payload)
+      const { data, error } = await getSupabaseClient().rpc('reconcile_applications', {
+        p_strategy: request.strategy,
+        p_local_applications: request.localApplications.map(toRemoteRecord),
+        p_idempotency_key: buildIdempotencyKey(request.strategy),
+      })
+      if (error) throw error
+      return normalizeReconcileResult(data)
     },
   }
 }

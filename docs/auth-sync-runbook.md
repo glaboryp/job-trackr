@@ -1,121 +1,48 @@
-# Auth + Sync Runbook
+# Supabase Auth + Sync Runbook
 
-## 1. Prerequisitos
+## Project
 
-- Node.js y pnpm instalados.
-- Proyecto InsForge vinculado (`.insforge/project.json` existe).
-- Dependencias instaladas con `pnpm install`.
+- Supabase project ref: `xnefxiopfclrunkjwqzj`
+- Vercel project: `job-trackr`
+- Supabase schema and policies: `supabase/migrations/`
+- Frontend configuration: `VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY`, `VITE_SUPABASE_AUTH_ENABLED`
 
-## 2. Variables de entorno
+The publishable key is intended for browser use. Never put a Supabase secret/service-role key in a `VITE_` variable or in frontend code.
 
-Crear `.env` desde `.env.example` y completar:
+## Apply migrations
 
-```bash
-VITE_INSFORGE_URL=https://<appkey>.<region>.insforge.app
-VITE_INSFORGE_ANON_KEY=<public-anon-key>
-VITE_INSFORGE_AUTH_ENABLED=true
-```
-
-Notas:
-
-- Nunca uses `api_key` de `.insforge/project.json` en frontend.
-- Si `VITE_INSFORGE_AUTH_ENABLED=false`, la app funciona 100% anónima con localStorage.
-
-## 3. Flujo operativo
-
-### Bootstrap de sesión
-
-- `bootstrapping`: la app intenta recuperar sesión actual.
-- `anonymous`: sin sesión, fuente de datos local (`localStorage`).
-- `authenticated`: sesión activa y fuente de datos remota.
-- `conflict_required`: detectó datos locales y remotos; bloquea mutaciones.
-- `reconciling`: aplicando estrategia de reconciliación.
-- `error`: fallo de auth/sync recuperable.
-
-### Sign up / Login
-
-- Registro y login están embebidos en la UI principal.
-- Si el usuario se autentica y:
-  - Solo existe local: se migra automáticamente a cuenta (`keep_local`).
-  - Solo existe remoto: se carga remoto.
-  - Existen ambos: se muestra modal bloqueante obligatoria.
-
-### Modal de conflicto
-
-Opciones disponibles:
-
-- `merge`: unifica con regla determinista `most recent wins`.
-- `keep_account`: conserva dataset remoto.
-- `keep_local`: sobrescribe remoto con local (requiere snapshot de respaldo en backend).
-
-## 4. Endpoint de reconciliación
-
-- Función: `reconcile-applications`.
-- Requiere `Bearer token` válido.
-- Requiere `x-idempotency-key` por request.
-- Debe ser transaccional e idempotente por `(user_id, idempotency_key)`.
-
-## 5. Verificación local
-
-### Suite completa
+The project is linked with `pnpm dlx supabase link`. Apply future migrations with:
 
 ```bash
-pnpm test -- --run
-pnpm build
+pnpm dlx supabase db push
 ```
 
-### Pruebas focalizadas
+The authenticated `applications` table uses RLS policies scoped to `auth.uid()`. Conflict reconciliation runs transactionally in `public.reconcile_applications`. Legacy InsForge records are staged in the non-exposed `private` schema and claimed by a verified Supabase account whose email matches the legacy account.
+
+## InsForge backup import
+
+The import utility reads only `auth.users` IDs/emails and `public.applications` from the PostgreSQL dump. It does not import password hashes or InsForge platform schemas.
 
 ```bash
-pnpm vitest run src/__tests__/useSession.test.ts
-pnpm vitest run src/__tests__/App.auth.integration.test.ts
-pnpm vitest run src/__tests__/mergeApplications.test.ts
-pnpm vitest run src/__tests__/authService.test.ts
+node scripts/prepare-insforge-import.js /path/to/insforge.sql.gz
+pnpm dlx supabase db query --remote --file supabase/.temp/import-insforge.sql --yes
 ```
 
-## 6. Rollback de reconciliación
+Generated SQL is written under ignored `supabase/.temp/` because it contains account emails and application notes. Users create and verify a new Supabase account with their existing email; the app claims their staged applications on first login. Their InsForge passwords are not migrated.
 
-Caso objetivo: un `keep_local` sobrescribió remoto y se necesita recuperar estado previo.
+## Session and data flow
 
-1. Identificar snapshot reciente del usuario en `public.reconcile_snapshots`:
+- On startup, Supabase Auth restores the session.
+- Without a session, the app remains anonymous and stores data in browser `localStorage`.
+- On login, the app claims any matching legacy records, loads the user's remote applications, and reconciles local and remote snapshots when both exist.
+- RLS keeps every remote read and write scoped to the signed-in user.
 
-```sql
-select id, created_at, strategy
-from public.reconcile_snapshots
-where user_id = '<USER_ID>'
-order by created_at desc;
-```
+## Redirect and email settings
 
-2. Tomar `snapshot_payload` del snapshot seleccionado.
-3. Ejecutar restore transaccional:
+The linked Supabase project is configured with `https://job-trackr-wine.vercel.app` as its Site URL, localhost for development, and the project's Vercel preview URL pattern in the redirect allowlist. Email confirmation is enabled. Registration asks the user to confirm their address before logging in.
 
-```sql
-begin;
+Before allowing signups for users outside the Supabase organization, configure custom SMTP in Supabase Auth. The built-in SMTP service only delivers to organization team members and is limited to two emails per hour; see [Supabase custom SMTP setup](https://supabase.com/docs/guides/auth/auth-smtp). Keep the SMTP password in Supabase Auth settings, never in the frontend or a `VITE_` variable.
 
--- eliminar estado actual del usuario
-delete from public.applications where user_id = '<USER_ID>';
+## Rollback
 
--- reinsertar desde snapshot_payload (estructura JSON de applications)
--- este paso depende del helper SQL disponible en tu entorno
-
-commit;
-```
-
-4. Verificar con consulta por usuario:
-
-```sql
-select id, company_name, job_title, updated_at
-from public.applications
-where user_id = '<USER_ID>'
-order by updated_at desc;
-```
-
-## 7. Post-deploy checklist
-
-- `pnpm test -- --run` en CI en verde.
-- `pnpm build` en verde.
-- Registro, login, logout y reset password funcionales.
-- Modal de conflicto se muestra cuando hay local+remoto.
-- Reconciliación por `merge`, `keep_account`, `keep_local` devuelve conteos y snapshot.
-- No hay secretos en bundle frontend (`api_key`, service roles).
-- RLS activa y policies CRUD por `auth.uid()` en `public.applications`.
+The InsForge backup remains the source snapshot. Legacy rows are held in private staging tables; they are not deleted after being claimed. Application edits after migration are stored in `public.applications` and should be exported before any schema rollback.

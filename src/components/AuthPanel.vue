@@ -4,13 +4,19 @@ import { computed, ref } from 'vue'
 import type { AuthCredentials } from '../types/auth'
 
 type AuthMode = 'login' | 'signup' | 'request-reset' | 'confirm-reset'
+type Notice = { tone: 'success' | 'info'; title: string; message: string } | null
 
-const props = defineProps<{
+const props = withDefaults(defineProps<{
   authEnabled: boolean
   isBusy: boolean
   userEmail: string | null
   errorMessage: string | null
-}>()
+  signupPendingEmail?: string | null
+  notice?: Notice
+}>(), {
+  signupPendingEmail: null,
+  notice: null,
+})
 
 const emit = defineEmits<{
   (e: 'login', credentials: AuthCredentials): void
@@ -19,6 +25,8 @@ const emit = defineEmits<{
   (e: 'request-reset', email: string): void
   (e: 'confirm-reset', payload: { token?: string; newPassword: string }): void
   (e: 'clear-error'): void
+  (e: 'resend-confirmation', email: string): void
+  (e: 'clear-signup-pending'): void
 }>()
 
 const mode = ref<AuthMode>('login')
@@ -38,6 +46,7 @@ function resetLocalError(): void {
 }
 
 function switchMode(nextMode: AuthMode): void {
+  emit('clear-signup-pending')
   mode.value = nextMode
   resetLocalError()
 }
@@ -145,7 +154,7 @@ function submitResetConfirmation(): void {
       class="rounded border-2 border-amber-600 bg-amber-50 px-3 py-2 text-xs font-semibold text-amber-800"
       data-testid="auth-disabled-message"
     >
-      Auth deshabilitada. Configura las variables VITE_INSFORGE_* para activar registro/login.
+      Auth deshabilitada. Configura las variables VITE_SUPABASE_* para activar registro/login.
     </p>
 
     <template v-else-if="isLoggedIn">
@@ -153,6 +162,30 @@ function submitResetConfirmation(): void {
         Sesión activa: {{ userEmail }}
       </p>
     </template>
+
+    <section v-else-if="signupPendingEmail" class="grid gap-3 py-2" data-testid="signup-pending" aria-live="polite">
+      <div class="border-l-4 border-indigo-600 bg-indigo-50 px-4 py-3 text-zinc-900">
+        <h3 class="text-base font-bold">Revisa tu correo</h3>
+        <p class="mt-1 text-sm">Hemos enviado un enlace de confirmación a <strong class="break-all">{{ signupPendingEmail }}</strong>.</p>
+        <p class="mt-2 text-sm">Abre el enlace para activar tu cuenta. Después podrás iniciar sesión.</p>
+      </div>
+      <button
+        type="button"
+        class="cursor-pointer border-2 border-zinc-900 bg-indigo-600 px-3 py-2 text-sm font-bold text-white disabled:cursor-wait disabled:opacity-60"
+        data-testid="auth-resend-confirmation"
+        :disabled="isBusy"
+        @click="emit('resend-confirmation', signupPendingEmail)"
+      >
+        {{ isBusy ? 'Enviando…' : 'Reenviar correo' }}
+      </button>
+      <button type="button" class="text-left text-sm font-semibold text-indigo-700 underline" :disabled="isBusy" @click="switchMode('login')">
+        Volver a iniciar sesión
+      </button>
+      <p v-if="notice" class="border-l-4 px-3 py-2 text-sm" :class="notice.tone === 'success' ? 'border-emerald-600 bg-emerald-50 text-emerald-900' : 'border-indigo-600 bg-indigo-50 text-indigo-900'" role="status" data-testid="auth-notice">
+        <strong>{{ notice.title }}</strong> {{ notice.message }}
+      </p>
+      <p v-if="errorMessage" class="border-l-4 border-rose-600 bg-rose-50 px-3 py-2 text-sm text-rose-800" role="alert" data-testid="auth-error">{{ errorMessage }}</p>
+    </section>
 
     <template v-else>
       <div class="mb-3 flex gap-2" role="tablist" aria-label="Opciones de acceso">
@@ -164,7 +197,7 @@ function submitResetConfirmation(): void {
           :disabled="isBusy"
           @click="switchMode('login')"
         >
-          Login
+          Iniciar sesión
         </button>
         <button
           type="button"
@@ -174,7 +207,7 @@ function submitResetConfirmation(): void {
           :disabled="isBusy"
           @click="switchMode('signup')"
         >
-          Registro
+          Crear cuenta
         </button>
       </div>
 
@@ -256,11 +289,10 @@ function submitResetConfirmation(): void {
         >
 
         <button
-          type="button"
+          type="submit"
           class="mt-2 cursor-pointer border-2 border-zinc-900 bg-emerald-600 px-3 py-2 text-xs font-bold uppercase tracking-widest text-white"
           data-testid="auth-signup-submit"
           :disabled="isBusy"
-          @click="submitSignup"
         >
           Crear cuenta
         </button>
@@ -279,11 +311,10 @@ function submitResetConfirmation(): void {
         >
 
         <button
-          type="button"
+          type="submit"
           class="mt-2 cursor-pointer border-2 border-zinc-900 bg-zinc-900 px-3 py-2 text-xs font-bold uppercase tracking-widest text-white"
           data-testid="auth-reset-request-submit"
           :disabled="isBusy"
-          @click="submitResetRequest"
         >
           Enviar instrucciones
         </button>
@@ -304,7 +335,7 @@ function submitResetConfirmation(): void {
           :disabled="isBusy"
           @click="switchMode('login')"
         >
-          Volver a login
+          Volver a iniciar sesión
         </button>
       </form>
 
@@ -345,15 +376,14 @@ function submitResetConfirmation(): void {
           :disabled="isBusy"
           @click="switchMode('login')"
         >
-          Volver a login
+          Volver a iniciar sesión
         </button>
       </form>
 
-      <p
-        v-if="localError || errorMessage"
-        class="mt-3 rounded border-2 border-rose-600 bg-rose-50 px-2 py-1 text-xs font-semibold text-rose-700"
-        data-testid="auth-error"
-      >
+      <p v-if="notice" class="mt-3 border-l-4 px-3 py-2 text-sm" :class="notice.tone === 'success' ? 'border-emerald-600 bg-emerald-50 text-emerald-900' : 'border-indigo-600 bg-indigo-50 text-indigo-900'" role="status" data-testid="auth-notice">
+        <strong>{{ notice.title }}</strong> {{ notice.message }}
+      </p>
+      <p v-if="localError || errorMessage" class="mt-3 border-l-4 border-rose-600 bg-rose-50 px-3 py-2 text-sm text-rose-800" role="alert" data-testid="auth-error">
         {{ localError || errorMessage }}
       </p>
     </template>

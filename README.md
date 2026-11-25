@@ -12,7 +12,7 @@ Esta versión inicial (MVP) se centra en la experiencia core de gestión local:
   - Desktop: Soporte para Drag & Drop.
   - Mobile: Selector de estado simplificado para pantallas táctiles.
 - **Validación de Datos**: Modal con validación para asegurar que la información sea correcta.
-- **Persistencia**: Todos los datos se guardan automáticamente en el `localStorage` de tu navegador.
+- **Persistencia**: modo anónimo con `localStorage` o sincronización entre dispositivos con Supabase.
 - **Empty State**: Interfaz optimizada para cuando aún no tienes candidaturas.
 
 ## 🛠️ Stack Tecnológico
@@ -43,31 +43,31 @@ Sigue estos pasos para levantar el proyecto localmente:
    pnpm dev
    ```
 
-## 🔐 Inicio de Sesión y Sync (InsForge)
+## 🔐 Inicio de Sesión y Sync (Supabase)
 
-Se incluye autenticación con InsForge:
+La aplicación usa Supabase Auth y PostgreSQL:
 
 - **Signup**: crea una cuenta nueva con email y contraseña.
 - **Login**: inicia sesión con email y contraseña.
 - **Reset de contraseña**: solicita un enlace para recuperar acceso.
-- **Sync remoto**: al iniciar sesión, la app puede unificar candidaturas locales y remotas.
+- **Sync remoto**: las candidaturas quedan aisladas por usuario mediante Row Level Security (RLS).
 - **Modo anónimo**: si no activas auth, la app sigue funcionando con `localStorage`.
 
-1. Copiar el fichero de ejemplo de variables de entorno:
+1. Copia el fichero de ejemplo de variables de entorno:
    ```bash
    cp .env.example .env
    ```
 
-2. Completa las variables públicas del cliente:
+2. Completa las variables públicas del proyecto Supabase:
    ```bash
-   VITE_INSFORGE_URL=https://<appkey>.<region>.insforge.app
-   VITE_INSFORGE_ANON_KEY=<public-anon-key>
-   VITE_INSFORGE_AUTH_ENABLED=true
+   VITE_SUPABASE_URL=https://<project-ref>.supabase.co
+   VITE_SUPABASE_PUBLISHABLE_KEY=<publishable-key>
+   VITE_SUPABASE_AUTH_ENABLED=true
    ```
 
 3. Si quieres mantener auth apagada temporalmente:
    ```bash
-   VITE_INSFORGE_AUTH_ENABLED=false
+   VITE_SUPABASE_AUTH_ENABLED=false
    ```
 
 ## 🔄 Auth + Sync (Resumen de Flujo)
@@ -85,15 +85,15 @@ Se incluye autenticación con InsForge:
 - `pnpm preview`: Previsualiza localmente la build de producción.
 - `pnpm test -- --run`: Ejecuta suite completa en modo CI.
 
-## 🚀 Deploy manual de la function
+## 🗃️ Base de datos y migraciones
 
-Cuando se modifique la lógica de sincronización o resolución de conflictos, desplegar la función de InsForge manualmente:
+El esquema versionado vive en `supabase/migrations`. Para aplicar migraciones nuevas al proyecto vinculado:
 
 ```bash
-npx @insforge/cli functions deploy reconcile-applications
+pnpm dlx supabase db push
 ```
 
-Si ya estás autenticada en el CLI y el proyecto está vinculado, este comando actualiza la function `reconcile-applications` en InsForge.
+La reconciliación local/remota se ejecuta como una función PostgreSQL (`reconcile_applications`) para que los cambios sean atómicos.
 
 ## 📂 Estructura del Proyecto
 

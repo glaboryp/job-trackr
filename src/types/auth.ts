@@ -10,6 +10,7 @@ export type AuthErrorCode =
   | 'network_error'
   | 'config_error'
   | 'user_already_exists'
+  | 'email_confirmation_required'
   | 'unknown_error'
 
 export type AuthServiceError = {
