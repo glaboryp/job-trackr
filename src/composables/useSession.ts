@@ -1,6 +1,6 @@
 import { computed, ref } from 'vue'
 
-import { InsforgeConfigError, readInsforgeConfig } from '../config/insforge'
+import { SupabaseConfigError, readSupabaseConfig } from '../config/supabase'
 import { authService } from '../services/auth/authService'
 import type { AuthCredentials, AuthServiceError, AuthUser } from '../types/auth'
 import type { SessionState, SessionStatus } from '../types/session'
@@ -11,7 +11,7 @@ function normalizeSessionError(error: unknown): string {
     return error
   }
 
-  if (error instanceof InsforgeConfigError) {
+  if (error instanceof SupabaseConfigError) {
     return `${error.message}. La app seguirá en modo anónimo.`
   }
 
@@ -29,7 +29,7 @@ export function useSession() {
   const errorMessage = ref<string | null>(null)
   const conflict = ref<ConflictSnapshot | null>(null)
 
-  const authEnabled = computed(() => readInsforgeConfig({ strict: false }).authEnabled)
+  const authEnabled = computed(() => readSupabaseConfig({ strict: false }).authEnabled)
   const isAnonymous = computed(() => status.value === 'anonymous')
   const isAuthenticated = computed(() => status.value === 'authenticated')
   const shouldBlockBoard = computed(() => status.value === 'conflict_required' || status.value === 'reconciling')
@@ -45,7 +45,7 @@ export function useSession() {
     }
 
     try {
-      readInsforgeConfig({ strict: true })
+      readSupabaseConfig({ strict: true })
       const currentUser = await authService.getCurrentUser()
 
       user.value = currentUser
@@ -167,6 +167,16 @@ export function useSession() {
     }
   }
 
+  async function resendSignupConfirmation(email: string): Promise<void> {
+    try {
+      await authService.resendSignupConfirmation(email)
+      errorMessage.value = null
+    } catch (error) {
+      errorMessage.value = normalizeSessionError(error)
+      throw error
+    }
+  }
+
   const state = computed<SessionState>(() => ({
     status: status.value,
     user: user.value,
@@ -196,5 +206,6 @@ export function useSession() {
     clearError,
     requestPasswordReset,
     confirmPasswordReset,
+    resendSignupConfirmation,
   }
 }

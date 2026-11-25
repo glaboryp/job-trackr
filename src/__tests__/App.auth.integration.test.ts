@@ -49,9 +49,9 @@ describe('App auth integration', () => {
     vi.restoreAllMocks()
     vi.unstubAllEnvs()
 
-    vi.stubEnv('VITE_INSFORGE_AUTH_ENABLED', 'true')
-    vi.stubEnv('VITE_INSFORGE_URL', 'https://example.insforge.app')
-    vi.stubEnv('VITE_INSFORGE_ANON_KEY', 'public-key')
+    vi.stubEnv('VITE_SUPABASE_AUTH_ENABLED', 'true')
+    vi.stubEnv('VITE_SUPABASE_URL', 'https://example.supabase.co')
+    vi.stubEnv('VITE_SUPABASE_PUBLISHABLE_KEY', 'public-key')
 
     authServiceMock.getCurrentUser.mockResolvedValue(null)
     authServiceMock.login.mockResolvedValue({ id: 'user-1', email: 'user@example.com' })

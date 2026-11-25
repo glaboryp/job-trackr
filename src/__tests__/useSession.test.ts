@@ -29,7 +29,7 @@ describe('useSession', () => {
   })
 
   it('boots into anonymous mode when auth is disabled', async () => {
-    vi.stubEnv('VITE_INSFORGE_AUTH_ENABLED', 'false')
+    vi.stubEnv('VITE_SUPABASE_AUTH_ENABLED', 'false')
 
     const session = useSession()
     await session.bootstrap()
@@ -39,21 +39,21 @@ describe('useSession', () => {
   })
 
   it('reports explicit config error when auth is enabled but vars are missing', async () => {
-    vi.stubEnv('VITE_INSFORGE_AUTH_ENABLED', 'true')
-    vi.stubEnv('VITE_INSFORGE_URL', '')
-    vi.stubEnv('VITE_INSFORGE_ANON_KEY', '')
+    vi.stubEnv('VITE_SUPABASE_AUTH_ENABLED', 'true')
+    vi.stubEnv('VITE_SUPABASE_URL', '')
+    vi.stubEnv('VITE_SUPABASE_PUBLISHABLE_KEY', '')
 
     const session = useSession()
     await session.bootstrap()
 
     expect(session.status.value).toBe('error')
-    expect(session.errorMessage.value).toContain('VITE_INSFORGE_URL')
+    expect(session.errorMessage.value).toContain('VITE_SUPABASE_URL')
   })
 
   it('logs in and reaches authenticated state', async () => {
-    vi.stubEnv('VITE_INSFORGE_AUTH_ENABLED', 'true')
-    vi.stubEnv('VITE_INSFORGE_URL', 'https://example.insforge.app')
-    vi.stubEnv('VITE_INSFORGE_ANON_KEY', 'public-key')
+    vi.stubEnv('VITE_SUPABASE_AUTH_ENABLED', 'true')
+    vi.stubEnv('VITE_SUPABASE_URL', 'https://example.supabase.co')
+    vi.stubEnv('VITE_SUPABASE_PUBLISHABLE_KEY', 'public-key')
 
     authServiceMock.login.mockResolvedValue({ id: 'user-1', email: 'user@example.com' })
 

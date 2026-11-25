@@ -35,6 +35,8 @@ const isAuthBusy = ref(false)
 const isBootstrapping = ref(true)
 const isAuthPanelOpen = ref(false)
 const authPanelRef = ref<HTMLElement | null>(null)
+const signupPendingEmail = ref<string | null>(null)
+const authNotice = ref<{ tone: 'success' | 'info'; title: string; message: string } | null>(null)
 
 const { activate: activateAuthTrap, deactivate: deactivateAuthTrap } = useFocusTrap(authPanelRef, {
   allowOutsideClick: false,
@@ -146,6 +148,10 @@ function openAuthPanel(): void {
 
 function closeAuthPanel(): void {
   isAuthPanelOpen.value = false
+}
+
+function clearAuthNotice(): void {
+  authNotice.value = null
 }
 
 function openCreateForm(): void {
@@ -295,6 +301,8 @@ async function bootstrapApp(): Promise<void> {
 }
 
 async function handleLogin(credentials: AuthCredentials): Promise<void> {
+  signupPendingEmail.value = null
+  clearAuthNotice()
   clearAlerts()
   isAuthBusy.value = true
 
@@ -312,6 +320,7 @@ async function handleLogin(credentials: AuthCredentials): Promise<void> {
 }
 
 async function handleSignup(credentials: AuthCredentials): Promise<void> {
+  clearAuthNotice()
   clearAlerts()
   isAuthBusy.value = true
 
@@ -321,8 +330,14 @@ async function handleSignup(credentials: AuthCredentials): Promise<void> {
     await nextTick()
     isAuthPanelOpen.value = false
   } catch (error) {
-    console.warn('[handleSignup] signup failed', error)
-    session.moveToAnonymousWithError(session.errorMessage.value ?? 'No fue posible registrar la cuenta.')
+    const authError = error as { code?: string }
+    if (authError?.code === 'email_confirmation_required') {
+      signupPendingEmail.value = credentials.email
+      session.clearError()
+    } else {
+      console.warn('[handleSignup] signup failed', error)
+      session.moveToAnonymousWithError(session.errorMessage.value ?? 'No fue posible crear la cuenta. Inténtalo de nuevo.')
+    }
   } finally {
     isAuthBusy.value = false
   }
@@ -342,11 +357,17 @@ async function handleLogout(): Promise<void> {
 }
 
 async function handleRequestPasswordReset(email: string): Promise<void> {
+  clearAuthNotice()
   clearAlerts()
   isAuthBusy.value = true
 
   try {
     await session.requestPasswordReset(email)
+    authNotice.value = {
+      tone: 'info',
+      title: 'Solicitud enviada.',
+      message: 'Si existe una cuenta con ese email, recibirás instrucciones para cambiar la contraseña.',
+    }
   } catch (error) {
     console.warn('[handleRequestPasswordReset] request failed', error)
   } finally {
@@ -355,13 +376,29 @@ async function handleRequestPasswordReset(email: string): Promise<void> {
 }
 
 async function handleConfirmPasswordReset(payload: { token?: string; newPassword: string }): Promise<void> {
+  clearAuthNotice()
   clearAlerts()
   isAuthBusy.value = true
 
   try {
     await session.confirmPasswordReset(payload.newPassword, payload.token)
+    authNotice.value = { tone: 'success', title: 'Contraseña actualizada.', message: 'Ya puedes iniciar sesión con tu nueva contraseña.' }
   } catch (error) {
     console.warn('[handleConfirmPasswordReset] confirm failed', error)
+  } finally {
+    isAuthBusy.value = false
+  }
+}
+
+async function handleResendConfirmation(email: string): Promise<void> {
+  clearAuthNotice()
+  session.clearError()
+  isAuthBusy.value = true
+  try {
+    await session.resendSignupConfirmation(email)
+    authNotice.value = { tone: 'success', title: 'Correo reenviado.', message: 'Revisa tu bandeja de entrada y la carpeta de spam.' }
+  } catch (error) {
+    console.warn('[handleResendConfirmation] resend failed', error)
   } finally {
     isAuthBusy.value = false
   }
@@ -428,7 +465,7 @@ onMounted(() => {
       </header>
 
       <section
-        v-if="isBoardLocked || sessionError || remoteError"
+        v-if="isBoardLocked || (sessionError && !isAuthPanelOpen) || remoteError"
         class="mb-6 grid gap-2"
         aria-live="polite"
       >
@@ -440,7 +477,7 @@ onMounted(() => {
           Debes resolver la sincronización antes de modificar el tablero.
         </p>
         <p
-          v-if="sessionError"
+          v-if="sessionError && !isAuthPanelOpen"
           class="rounded border-2 border-rose-600 bg-rose-50 px-3 py-2 text-xs font-semibold text-rose-700"
           data-testid="session-error"
         >
@@ -661,12 +698,16 @@ onMounted(() => {
             :is-busy="isAuthBusy || isBootstrapping"
             :user-email="sessionUserEmail"
             :error-message="sessionError"
+            :signup-pending-email="signupPendingEmail"
+            :notice="authNotice"
             @login="handleLogin"
             @signup="handleSignup"
             @logout="handleLogout"
             @request-reset="handleRequestPasswordReset"
             @confirm-reset="handleConfirmPasswordReset"
-            @clear-error="clearAlerts"
+            @resend-confirmation="handleResendConfirmation"
+            @clear-signup-pending="signupPendingEmail = null"
+            @clear-error="clearAlerts(); clearAuthNotice()"
           />
           <p v-if="!authEnabled" class="mt-3 text-[11px] font-mono text-zinc-600">
             {{ authCtaLabel }} desde el panel cuando actives la autenticación.
