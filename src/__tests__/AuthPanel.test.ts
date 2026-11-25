@@ -41,6 +41,7 @@ describe('AuthPanel', () => {
 
   it('emits signup payload after validation', async () => {
     const wrapper = mount(AuthPanel, {
+      attachTo: document.body,
       props: {
         authEnabled: true,
         isBusy: false,
